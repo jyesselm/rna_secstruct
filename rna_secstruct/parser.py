@@ -100,6 +100,8 @@ class Parser:
         :param structure:
         :return: None
         """
+        if len(sequence) == 0:
+            raise ValueError("Sequence is empty")
         # enforce upper case sequence and is RNA
         sequence = sequence.upper().replace("T", "U")
         if len(sequence) != len(structure):
@@ -146,7 +148,7 @@ class Parser:
         strand = list(range(start, start + single_strand_count))
         sstrand = Motif(
             "SINGLESTRAND",
-            strand,
+            [strand],
             sequence[start : start + single_strand_count],
             structure[start : start + single_strand_count],
             self.motif_id,
