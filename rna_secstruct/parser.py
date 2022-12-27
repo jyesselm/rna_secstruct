@@ -5,6 +5,8 @@ by Chris Jurich
 import re
 from typing import List
 
+from rna_secstruct.motif import Motif
+
 
 def is_valid_dot_bracket_str(structure: str) -> bool:
     """
@@ -75,93 +77,6 @@ def is_circular(start, connections):
         it = connections[it] + 1
         if it == start or it < start:
             return True
-
-
-class Motif:
-    """
-    A class to represent a motif in a secondary structure.
-    """
-
-    def __init__(self, m_type, strands, sequence, structure, m_id):
-        self.m_type = str(m_type)
-        self.m_id = m_id
-        self.strands = strands
-        self.sequence = sequence
-        self.structure = structure
-        self.parent = None
-        self.children = []
-        self.token = self.__get_token()
-        self.depth = -1
-
-    def __repr__(self) -> str:
-        """
-        String representation of just the motif at hand.
-
-        :return: The :class:`str()` representation of the :class:`Motif()`.
-        :rtype: :class:`str()`
-        """
-        return f"{self.m_type},{self.sequence},{self.structure}"
-
-    def __get_token(self):
-        if self.m_type == "SINGLESTRAND":
-            return f"SingleStrand{len(self.sequence)}"
-        elif self.m_type == "HAIRPIN":
-            return f"Hairpin{len(self.sequence)}"
-        elif self.m_type == "HELIX":
-            return f"Helix{len(self.sequence) - 1 // 2}"
-        elif self.m_type == "JUNCTION":
-            return f"Junction{len(self.strands)}_" + "|".join(
-                [str(len(strand) - 2) for strand in self.strands]
-            )
-        raise ValueError(f"Invalid motif type: {self.m_type}")
-
-    def add_child(self, child) -> None:
-        child.parent = self
-        self.children.append(child)
-
-    def recursive_sequence(self):
-        result = ""
-        if self.m_type == "SINGLESTRAND":
-            result = self.sequence
-            for c in self.children:
-                result += c.recursive_sequence()
-        elif self.m_type == "HAIRPIN":
-            result = self.sequence[1:-1]
-        elif self.m_type == "HELIX":
-            result = self.sequence.split("&")
-            result = result[0] + self.children[0].recursive_sequence() + result[1]
-            if len(self.children) > 1:
-                result += self.children[1].recursive_sequence()
-        elif self.m_type == "JUNCTION":
-            result = ""
-            seq_chunks = [subseq[1:-1] for subseq in self.sequence.split("&")]
-            for seq_chunk, child in zip(seq_chunks, self.children):
-                result += seq_chunk
-                result += child.recursive_sequence()
-            result += seq_chunks[-1]
-        return result
-
-    def recursive_structure(self):
-        result = ""
-        if self.m_type == "SINGLESTRAND":
-            result = self.structure
-            for c in self.children:
-                result += c.recursive_structure()
-        elif self.m_type == "HAIRPIN":
-            result = self.structure[1:-1]
-        elif self.m_type == "HELIX":
-            result = self.structure.split("&")
-            result = result[0] + self.children[0].recursive_structure() + result[1]
-            if len(self.children) > 1:
-                result += self.children[1].recursive_structure()
-        elif self.m_type == "JUNCTION":
-            result = ""
-            secstruct_chunks = [subseq[1:-1] for subseq in self.structure.split("&")]
-            for secstruct_chunk, child in zip(secstruct_chunks, self.children):
-                result += secstruct_chunk
-                result += child.recursive_structure()
-            result += secstruct_chunks[-1]
-        return result
 
 
 class Parser:

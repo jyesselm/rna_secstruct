@@ -73,6 +73,7 @@ def test_simple_hairpins():
     assert m1.m_type == "HAIRPIN"
     assert m1.sequence == "GAAAC"
     assert m1.structure == "(...)"
+    assert m1.strands == [[2, 3, 4, 5, 6]]
     # has internal loop
     root = p.parse("GGGACCUUCGGGACCC", "(((.((....)).)))")
     motif_dict = get_motif_dict(root)
