@@ -55,7 +55,7 @@ def test_in_valid_dot_brackets():
         p.parse("GGGYAACCC", "(((...)))")
 
 
-def test_simple_hairpin():
+def test_simple_hairpins():
     """
     test a simple structure
     """
@@ -73,11 +73,37 @@ def test_simple_hairpin():
     assert m1.m_type == "HAIRPIN"
     assert m1.sequence == "GAAAC"
     assert m1.structure == "(...)"
+    # has internal loop
+    root = p.parse("GGGACCUUCGGGACCC", "(((.((....)).)))")
+    motif_dict = get_motif_dict(root)
+    assert len(motif_dict) == 4
+
 
 def test_parsing_edge():
     """
     test a simple structure
     """
+    # single nucleotide
     p = Parser()
-    root = p.parse("GGG", "...")
+    root = p.parse("G", ".")
     assert root.m_type == "SINGLESTRAND"
+    # single hairpin
+    root = p.parse("GAAAC", "(...)")
+    motif_dict = get_motif_dict(root)
+    assert len(motif_dict) == 2
+    # three way junction
+    root = p.parse("GGAAACGAAACGAAACC", "((...)(...)(...))")
+    motif_dict = get_motif_dict(root)
+    m1 = motif_dict[1]
+    assert len(m1.children) == 3
+    assert len(motif_dict) == 8
+    root = p.parse("GGAAACGAAACGAAACCAAA", "((...)(...)(...))...")
+    motif_dict = get_motif_dict(root)
+    assert motif_dict[8].m_type == "SINGLESTRAND"
+    m0 = motif_dict[0]
+    assert m0.recursive_sequence() == "GGAAACGAAACGAAACCAAA"
+    assert m0.recursive_structure() == "((...)(...)(...))..."
+    # single helix
+    root = p.parse("AAAAGAAAACAAAA", "....(....)....")
+    motif_dict = get_motif_dict(root)
+    assert len(motif_dict) == 4

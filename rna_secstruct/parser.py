@@ -52,7 +52,6 @@ def connectivity_list(structure: str) -> List[int]:
      right parentheses
     """
     connections, pairs = [-1] * len(structure), []
-
     for index, db in enumerate(structure):
         if db == "(":
             pairs.append(index)
@@ -60,10 +59,8 @@ def connectivity_list(structure: str) -> List[int]:
             complement = pairs.pop()
             connections[complement] = index
             connections[index] = complement
-
     if len(pairs):
         raise TypeError("Unbalanced parentheses in structure")
-
     return connections
 
 
@@ -96,6 +93,15 @@ class Motif:
         self.token = self.__get_token()
         self.depth = -1
 
+    def __repr__(self) -> str:
+        """
+        String representation of just the motif at hand.
+
+        :return: The :class:`str()` representation of the :class:`Motif()`.
+        :rtype: :class:`str()`
+        """
+        return f"{self.m_type},{self.sequence},{self.structure}"
+
     def __get_token(self):
         if self.m_type == "SINGLESTRAND":
             return f"SingleStrand{len(self.sequence)}"
@@ -104,7 +110,7 @@ class Motif:
         elif self.m_type == "HELIX":
             return f"Helix{len(self.sequence) - 1 // 2}"
         elif self.m_type == "JUNCTION":
-            return f"Junction{len(self.strands())}_" + "|".join(
+            return f"Junction{len(self.strands)}_" + "|".join(
                 [str(len(strand) - 2) for strand in self.strands]
             )
         raise ValueError(f"Invalid motif type: {self.m_type}")
@@ -307,7 +313,12 @@ class Parser:
             ]
             seq = "&".join([seq for seq, ss in seq_and_ss])
             ss = "&".join([ss for seq, ss in seq_and_ss])
-            return Motif("JUNCTION", strands, seq, ss, self.motif_id - 1)
+            m = Motif("JUNCTION", strands, seq, ss, self.motif_id - 1)
+            for strand in strands[:-1]:
+                m.add_child(
+                    self.__get_motifs(sequence, structure, connections, strand[-1])
+                )
+            return m
         else:
             seq, ss = self.__get_seq_and_ss_from_strand(sequence, structure, strands[0])
             return Motif("HAIRPIN", strands, seq, ss, self.motif_id - 1)
