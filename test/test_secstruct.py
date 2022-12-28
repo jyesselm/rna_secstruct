@@ -78,6 +78,6 @@ def test_display():
     """
     struct = SecStruct("GGGACCUUCGGGACCC", "(((.((....)).)))")
     print()
-    print(struct.root.to_str())
+    print(struct.to_str())
 
 

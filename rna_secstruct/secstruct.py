@@ -15,17 +15,17 @@ class SecStruct:
         :param sequence: a sequence of nucleotides
         :param structure: a dot bracket structure
         """
-        self.root = Parser().parse(sequence, structure)
-        self.sequence = sequence
-        self.structure = structure
-        self.motifs = self.__get_motifs(self.root)
+        self.__root = Parser().parse(sequence, structure)
+        self.__motifs = self.__get_motifs(self.__root)
+        self.__sequence = sequence
+        self.__structure = structure
 
     def __add__(self, other):
         """
         add two secondary structures together
         """
         return SecStruct(
-            self.sequence + other.sequence, self.structure + other.structure
+                self.__sequence + other.__sequence, self.__structure + other.__structure
         )
 
     def __iter__(self):
@@ -43,7 +43,7 @@ class SecStruct:
         return self.motifs[item]
 
     def __repr__(self):
-        return f"{self.sequence}, {self.structure}"
+        return f"{self.__sequence}, {self.__structure}"
 
     def __get_motifs(self, root):
         """
@@ -92,12 +92,12 @@ class SecStruct:
         m.sequence = sequence
         m.structure = structure
         m.m_type = m_type
-        full_seq = self.root.recursive_sequence()
-        full_ss = self.root.recursive_structure()
-        self.sequence = full_seq
-        self.structure = full_ss
-        self.root = Parser().parse(full_seq, full_ss)
-        self.motifs = self.__get_motifs(self.root)
+        full_seq = self.__root.recursive_sequence()
+        full_ss = self.__root.recursive_structure()
+        self.__sequence = full_seq
+        self.__structure = full_ss
+        self.__root = Parser().parse(full_seq, full_ss)
+        self.__motifs = self.__get_motifs(self.__root)
 
     def __change_inner_flanking(self, m, new_cp: str):
         """
@@ -116,12 +116,34 @@ class SecStruct:
         tks[0], tks[-1] = new_cp[0], new_cp[1]
         m.sequence = "".join(tks)
 
+    # properites ###############################################################
+    @property
+    def motifs(self):
+        """
+        get motifs
+        """
+        return self.__motifs
+
+    @property
+    def sequence(self):
+        """
+        get the sequence
+        """
+        return self.__sequence
+
+    @property
+    def structure(self):
+        """
+        get the structure
+        """
+        return self.__structure
+
     # getters and setters ######################################################
     def get_copy(self):
         """
         get a copy of this secondary structure
         """
-        return SecStruct(self.sequence, self.structure)
+        return SecStruct(self.__sequence, self.__structure)
 
     def get_hairpins(self):
         """
@@ -151,7 +173,7 @@ class SecStruct:
         """
         get the number of motifs
         """
-        return len(self.motifs)
+        return len(self.__motifs)
 
     def get_sub_structure(self, root_id):
         m = self[root_id]
@@ -210,3 +232,9 @@ class SecStruct:
                 if m.start_pos >= min_pos and m.end_pos <= max_pos:
                     motifs.append(m)
         return motifs
+
+    def to_str(self):
+        """
+        get a string representation of this secondary structure
+        """
+        return self.__root.to_str()
