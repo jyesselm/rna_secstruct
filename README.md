@@ -32,15 +32,15 @@ Motifs are stored as a dictionary with each given a specific ID. Motifs
 struct.motifs
 ```
 
-    {0: HELIX,GGG&CCC,(((&))), 1: HAIRPIN,GAAAC,(...)}
+{0: HELIX,GGG&CCC,(((&))), 1: HAIRPIN,GAAAC,(...)}
 
 ```python
 # can see a formatted version of all motifs with their corresponding ids
 print(struct.to_str())
 ```
 
-    ID: 0, Helix3 GGG&CCC (((&)))
-        ID: 1, Hairpin3 GAAAC (...)
+ID: 0, Helix3 GGG&CCC (((&)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;ID: 1, Hairpin3 GAAAC (...)
 
 ```python
 # can iterate over motifs
@@ -48,15 +48,15 @@ for m in struct:
     print(m)
 ```
 
-    HELIX,GGG&CCC,(((&)))
-    HAIRPIN,GAAAC,(...)
+HELIX,GGG&CCC,(((&)))
+HAIRPIN,GAAAC,(...)
 
 ```python
 # access first motif which is id `0`
 struct[0]
 ```
 
-    HELIX,GGG&CCC,(((&)))
+HELIX,GGG&CCC,(((&)))
 
 ### Working with motif objects
 An overview of all the properties that are stored in a motif
@@ -85,15 +85,15 @@ m0 = struct[0]
 }
 ```
 
-    {'m_id': 0,
-     'm_type': 'HELIX',
-     'sequence': 'GGG&CCC',
-     'structure': '(((&)))',
-     'strands': [[0, 1, 2], [6, 7, 8]],
-     'positions': [0, 1, 2, 6, 7, 8],
-     'start_pos': 0,
-     'end_pos': 8,
-     'children': [HAIRPIN,GAAAC,(...)]}
+{'m_id': 0, <br>
+'m_type': 'HELIX', <br>
+'sequence': 'GGG&CCC', <br>
+'structure': '(((&)))', <br>
+'strands': [[0, 1, 2], [6, 7, 8]], <br>
+'positions': [0, 1, 2, 6, 7, 8], <br>
+'start_pos': 0, <br>
+'end_pos': 8, <br>
+'children': [HAIRPIN,GAAAC,(...)]}
 
 #### common motif functions
 
@@ -102,37 +102,36 @@ m0 = struct[0]
 m0.has_parent()
 ```
 
-    False
+False
 
 ```python
 # are there nodes under this one. Helices and junctions will almost always have children
 m0.has_children()
 ```
 
-    True
+True
 
 ```python
 m0.is_single_strand()
 ```
 
-    False
+False
 
 ```python
 m0.is_hairpin()
 ```
 
-    False
+False
 
 ```python
 m0.is_junction()
 ```
 
-    False
+False
 
 ```python
 m0.is_helix()
 ```
 
-    True
+True
 
-## TODO
