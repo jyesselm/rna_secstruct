@@ -140,6 +140,13 @@ class Motif:
         return self.__m_id
 
     @property
+    def positions(self):
+        """
+        Returns the positions of the motif.
+        """
+        return self.__positions
+
+    @property
     def start_pos(self):
         """
         Returns the start position of the motif.
