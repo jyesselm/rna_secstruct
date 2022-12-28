@@ -20,7 +20,7 @@ def is_valid_dot_bracket_str(structure: str) -> bool:
             lparen_ct += 1
         elif ch == ")":
             lparen_ct -= 1
-        elif ch == ".":
+        elif ch == "." or ch == "&":
             continue
         else:
             raise ValueError(
@@ -109,9 +109,9 @@ class Parser:
                 f"sequence and structure are not the same length:"
                 f" {sequence} {structure}"
             )
-        if not re.match(r"^[ACGUTN]+$", sequence):
+        if not re.match(r"^[ACGUTN&]+$", sequence):
             raise ValueError(f"sequence contains invalid characters: {sequence}")
-        if not re.match(r"^[().]+$", structure):
+        if not re.match(r"^[().&]+$", structure):
             raise ValueError(f"structure contains invalid characters: {structure}")
         is_valid_dot_bracket_str(structure)
 

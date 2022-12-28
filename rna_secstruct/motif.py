@@ -27,7 +27,6 @@ class Motif:
         self.parent = None
         self.children = []
         self.token = self.__get_token()
-        self.depth = -1
         self.start_pos = 9999
         self.end_pos = -1
         self.positions = []
@@ -103,7 +102,6 @@ class Motif:
     def recursive_structure(self):
         return self.__recursive_build("STRUCTURE")
 
-
     # properties ###############################################################
     @property
     def m_type(self):
@@ -111,7 +109,6 @@ class Motif:
         The type of motif.
         """
         return self.__m_type
-
 
     # getters ##################################################################
 
@@ -157,4 +154,31 @@ class Motif:
         """
         return self.__m_type == "SINGLESTRAND"
 
+    def num_strands(self):
+        """
+        Returns the number of strands in the motif.
+        """
+        return len(self.strands)
 
+    def to_str(self, depth=0):
+        """
+        Returns a string representation of the motif.
+        """
+        id_str = f"ID: {self.m_id}, "
+        pad = "\t" * depth
+        if not self.has_children():
+            return f"{pad}{id_str}{self.token} {self.sequence} {self.structure}"
+        else:
+            contents = [""]
+            for i, child in enumerate(self.children):
+                contents.append(child.to_str(depth + 1))
+            children = "\n".join(contents)
+        return f"{pad}{id_str}{self.token} {self.sequence} {self.structure}{children}"
+
+    # setters ##################################################################
+    @m_type.setter
+    def m_type(self, value):
+        # check if value is valid
+        if value not in ["SINGLESTRAND", "HAIRPIN", "HELIX", "JUNCTION"]:
+            raise ValueError(f"Invalid motif type: {value}")
+        self.__m_type = value
