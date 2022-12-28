@@ -2,7 +2,25 @@
 representation of secondary structure with motif
 """
 
+from typing import List, Optional
+from dataclasses import dataclass
 from rna_secstruct.parser import Parser, is_valid_dot_bracket_str
+from rna_secstruct.motif import Motif
+
+
+@dataclass(order=True)
+class MotifSearchParams:
+    """
+    params for rna design
+    """
+
+    sequence: Optional[str] = None
+    structure: Optional[str] = None
+    m_type: Optional[str] = None
+    min_pos: int = 0
+    max_pos: int = 999
+    min_id: int = 0
+    max_id: int = 999
 
 
 class SecStruct:
@@ -25,7 +43,7 @@ class SecStruct:
         add two secondary structures together
         """
         return SecStruct(
-                self.__sequence + other.__sequence, self.__structure + other.__structure
+            self.__sequence + other.__sequence, self.__structure + other.__structure
         )
 
     def __iter__(self):
@@ -63,9 +81,23 @@ class SecStruct:
 
     # design ###################################################################
 
-    def change_motif(self, m_id, sequence, structure):
+    def change_motif_sequence(self, m_id, seqeuence):
         """
-        change a motif
+        change the sequence of a motif
+        :param m_id:
+        :param seqeuence:
+        :return:
+        """
+        pass
+
+    def change_motif(self, m_id, sequence, structure) -> None:
+        """
+        change a motif sequence and secondary structure triggering a reparse
+        of secondary structure.
+        :param m_id: the id of the motif to change
+        :param sequence: the new sequence
+        :param structure: the new structure
+        :return: None
         """
         is_valid_dot_bracket_str(structure)
         if len(sequence) != len(structure):
@@ -115,6 +147,97 @@ class SecStruct:
         tks = list(m.sequence)
         tks[0], tks[-1] = new_cp[0], new_cp[1]
         m.sequence = "".join(tks)
+
+    # search ###################################################################
+
+    def __get_motifs_by_params(self, msp: MotifSearchParams) -> List[Motif]:
+        """
+        get a list of motifs by params
+        :param msp: parameters
+        :return:
+        """
+        motifs = []
+        for m in self:
+            if msp.m_type is not None and m.m_type != msp.m_type:
+                continue
+            if msp.sequence is not None and msp.sequence != m.sequence:
+                continue
+            if msp.structure is not None and msp.structure != m.structure:
+                continue
+            if m.m_id < msp.min_id or m.m_id > msp.max_id:
+                continue
+            if m.start_pos < msp.min_pos or m.end_pos > msp.max_pos:
+                continue
+            motifs.append(m)
+        return motifs
+
+    def get_motifs_by_strand_lengths(
+        self, strand_lengths, msp: Optional[MotifSearchParams] = None
+    ) -> List[Motif]:
+        """
+        get a motifs by the length of each strand, strand lengths is an list of
+        n size. Where n is the size of each strand. The list is in order of the
+        strand size. For example, if the motif is a hairpin it can only have
+        1 strand, so the list will be [n]. If the motif is a junction it can
+        have 2 or more strands, so the list will be [n, m, ...].
+
+        :param strand_lengths: the list of strand lengths, e.g. [3, 4, 5]
+        :param msp: optional motif search params
+        :return: a list of motifs
+        """
+        if msp is None:
+            msp = MotifSearchParams()
+        selected_motifs = self.__get_motifs_by_params(msp)
+        motifs = []
+        for m in selected_motifs:
+            # get the length of each strand
+            lengths = [len(s) for s in m.strands]
+            # compare the lengths
+            if lengths == strand_lengths:
+                motifs.append(m)
+        return motifs
+
+    def get_twoway_junctions_by_topology(
+        self, x_pos, y_pos, msp: Optional[MotifSearchParams] = None
+    ) -> List[Motif]:
+        """
+        get a two way junction by topology
+        """
+        # add 2 two each number in topology
+        # to account for the 2 flanking base pairs
+        if msp is None:
+            msp = MotifSearchParams(m_type="JUNCTION")
+        else:
+            if msp.m_type is not None and msp.m_type != "JUNCTION":
+                raise ValueError("m_type must be JUNCTION")
+            msp.m_type = "JUNCTION"
+
+        topology = [t + 2 for t in [x_pos, y_pos]]
+        return self.get_motifs_by_strand_lengths(topology, msp)
+
+    def get_motifs(self, msp) -> List[Motif]:
+        """
+        get motifs by sequence and structure
+        """
+        return self.__get_motifs_by_params(msp)
+
+    def get_motifs_by_token(
+        self, token, msp: Optional[MotifSearchParams] = None
+    ) -> List[Motif]:
+        """
+        get a list of motifs by a token
+        :param token: the token to search for
+        :param msp: optional motif search params
+        :return: a list of motifs
+        """
+        if msp is None:
+            msp = MotifSearchParams()
+        selected_motifs = self.__get_motifs_by_params(msp)
+        motifs = []
+        for m in selected_motifs:
+            if token == m.token:
+                motifs.append(m)
+        return motifs
 
     # properites ###############################################################
     @property
@@ -185,53 +308,6 @@ class SecStruct:
             seq = seq_spl[0][-1] + seq + seq_spl[1][0]
             struct = "(" + struct + ")"
         return SecStruct(seq, struct)
-
-    def get_motif_by_strand_lengths(self, strand_lengths, m_type=None):
-        """
-        get a motifs by the length of each strand, strand lengths is an list of n size. Where
-        n is the size of each strand. The list is in order of the strand size. For example,
-        if the motif is a hairpin it can only have 1 strand, so the list will be [n]. If the
-        motif is a junction it can have 2 or more strands, so the list will be [n, m, ...].
-        """
-        for m in self:
-            if m_type is not None and m.type != m_type:
-                continue
-            # get the length of each strand
-            lengths = [len(s) for s in m.strands]
-            # compare the lengths
-            if lengths == strand_lengths:
-                return m
-        return None
-
-    def get_twoway_junction_by_topology(self, x_pos, y_pos):
-        """
-        get a two way junction by topology
-        """
-        # add 2 two each number in topology
-        # to account for the 2 flanking base pairs
-        topology = [t + 2 for t in [x_pos, y_pos]]
-        return self.get_motif_by_strand_lengths(topology, "JUNCTION")
-
-    def get_motif(self, sequence, structure, min_pos=-1, max_pos=99999):
-        """
-        get a motif by sequence and structure
-        """
-        for m in self:
-            if m.sequence == sequence and m.structure == structure:
-                if m.start_pos >= min_pos and m.end_pos <= max_pos:
-                    return m
-        return None
-
-    def get_motifs(self, sequence, structure, min_pos=-1, max_pos=99999):
-        """
-        get motifs by sequence and structure
-        """
-        motifs = []
-        for m in self:
-            if m.sequence == sequence and m.structure == structure:
-                if m.start_pos >= min_pos and m.end_pos <= max_pos:
-                    motifs.append(m)
-        return motifs
 
     def to_str(self):
         """

@@ -1,0 +1,4 @@
+ID: 0, Helix3 GGG&CCC (((&)))
+    ID: 1, Junction2_1|1 GAC&GAC (.(&).)
+        ID: 2, Helix2 CC&GG ((&))
+            ID: 3, Hairpin4 CUUCGG (....)

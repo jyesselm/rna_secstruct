@@ -167,6 +167,13 @@ class Motif:
         """
         return self.__structure
 
+    @property
+    def token(self):
+        """
+        Returns the token for the motif.
+        """
+        return self.__token
+
     # getters ##################################################################
 
     def contains(self, position):
@@ -205,7 +212,7 @@ class Motif:
         """
         return self.__m_type == "HELIX"
 
-    def is_singlestrand(self):
+    def is_single_strand(self):
         """
         Returns true if the motif is a single strand.
         """
@@ -222,7 +229,7 @@ class Motif:
         Returns a string representation of the motif.
         """
         id_str = f"ID: {self.__m_id}, "
-        pad = "\t" * depth
+        pad = "    " * depth
         if not self.has_children():
             return f"{pad}{id_str}{self.__token} {self.__sequence} {self.__structure}"
         else:

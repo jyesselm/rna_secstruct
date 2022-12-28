@@ -12,7 +12,7 @@ def test_simple():
     m = Motif("SINGLESTRAND", [[0, 1, 2, 3, 4]], "AAAAA", ".....", 0)
     assert m.recursive_sequence() == "AAAAA"
     assert m.recursive_structure() == "....."
-    assert m.is_singlestrand()
+    assert m.is_single_strand()
     assert not m.is_helix()
     assert not m.is_hairpin()
     assert not m.is_junction()
