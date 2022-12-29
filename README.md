@@ -135,3 +135,145 @@ m0.is_helix()
 
 True
 
+```python
+# recursive functions call all children to get the full sequence and structure of this node and all
+# children
+m0.recursive_sequence(), m0.recursive_structure()
+```
+
+('GGGAAACCC', '(((...)))')
+
+### Working with Secstruct object
+
+```python
+struct = SecStruct("GGAAACGAAACGAAACC", "((...)(...)(...))")
+```
+
+```python
+# getting all helices.
+# there are similare get_single_strand(), get_junctions(), get_hairpins()
+struct.get_helices()
+```
+
+[HELIX,G&C,(&), HELIX,G&C,(&), HELIX,G&C,(&), HELIX,G&C,(&)]
+
+```python
+# getting a copy. Always a good idea if you are going to change the structure
+# see later sections on design
+struct_copy = struct.get_copy()
+```
+
+```python
+# getting a sub structure
+struct = SecStruct("GGGACCUUCGGGACCC", "(((.((....)).)))")
+# if I want remove the bottom helix I can simply do
+sub_struct = struct.get_sub_structure(1)
+# this gets all nodes from 1 and all its children
+sub_struct
+```
+
+GACCUUCGGGAC, (.((....)).)
+
+#### searching for motifs
+
+```python
+# can search for motifs using get_motifs function with search parameters
+struct = SecStruct("GGGACCUUCGGGACCC", "(((.((....)).)))")
+msp = MotifSearchParams(sequence="GAC&GAC")
+struct.get_motifs(msp)
+```
+
+[JUNCTION,GAC&GAC,(.(&).)]
+
+```python
+msp
+```
+
+MotifSearchParams(sequence='GAC&GAC', structure=None, m_type=None, min_pos=0, max_pos=999, min_id=0, max_id=999)
+
+You can search by sequence, structure, type of motifs, the miminal or maximum nucleotide position or the min and max id. These constraints can be useful if you wish to exclude common sequences on the 5' or 3' ends of a sequence of interest
+
+```python
+seq = (
+    "GGAAGAUCGAGUAGAUCAAAGAGCCUAUGGCUGCCACCCGAGCCCUUGAACUACAGGGAACACUGGAAA"
+    "CAGUACCCCCUGCAAGGGCGUUUGACGGUGGCAGCCUAAGGGCUCAAAGAAACAACAACAACAAC"
+)
+ss = (
+    "....((((.....))))...((((((..((((((((((((((((((((.....(((((...((((....)"
+    ")))...))))))))))))..)))..))))))))))...))))))...................."
+)
+struct = SecStruct(seq, ss)
+```
+
+```python
+msp = MotifSearchParams(m_type="JUNCTION", min_pos=50)
+struct.get_motifs(msp)
+```
+
+[JUNCTION,GAACA&UACCC,(...(&)...)]
+
+```python
+msp = MotifSearchParams(structure="(....)")
+struct.get_motifs(msp)
+
+```
+
+[HAIRPIN,GGAAAC,(....)]
+
+```python
+# it is also possible to search using motif "tokens" which are the indentifiers generated
+# for each motif. For example "Helix4" is any helix of length 4
+struct.get_motifs_by_token("Helix4")
+
+```
+
+[HELIX,GAUC&GAUC,((((&)))), HELIX,ACUG&CAGU,((((&))))]
+
+```python
+# get a two way junction (Junction2) which has 5 unpaired nucleotides on the first
+# strand and 0 on the other
+struct.get_motifs_by_token("Junction2_5|0")
+```
+
+[JUNCTION,GAACUAC&GC,(.....(&))]
+
+#### changing motifs in secstruct
+
+```python
+# using change_motif we can change the sequence or structure of a given motif
+# here is a trival example of changing the sequence of the helix which has the id=0
+struct = SecStruct("GGGAAACCC", "(((...)))")
+struct.change_motif(0, "AGG&CCU", "(((&)))")
+struct.sequence, struct.structure
+```
+
+('AGGAAACCU', '(((...)))')
+
+```python
+# here we can change the loop sequence from a tetraloop to a hexaloop
+struct.change_motif(1, "CUUUUUUG", "(......)")
+struct.sequence, struct.structure
+```
+
+('AGCUUUUUUGCU', '(((......)))')
+
+```python
+# can also make larger changes, by replacing a motif with a segment composed
+# of many motifs, the object will reparse and create new motifs
+struct = SecStruct("GGGAAACCC", "(((...)))")
+print("original motifs:")
+print(struct.to_str())
+print("\nnew motifs")
+struct.change_motif(1, "GGGACCUUCGGGACCC", "(((.((....)).)))")
+print(struct.to_str())
+```
+
+original motifs:
+ID: 0, Helix3 GGG&CCC (((&)))
+   ID: 1, Hairpin3 GAAAC (...)
+
+new motifs
+ID: 0, Helix5 GGGGG&CCCCC (((((&)))))
+   ID: 1, Junction2_1|1 GAC&GAC (.(&).)
+      ID: 2, Helix2 CC&GG ((&))
+          ID: 3, Hairpin4 CUUCGG (....)
