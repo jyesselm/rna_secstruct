@@ -46,6 +46,12 @@ class SecStruct:
             self.__sequence + other.__sequence, self.__structure + other.__structure
         )
 
+    def itermotifs(self):
+        """
+        iterate over motifs
+        """
+        return iter(self.motifs.items())
+
     def __iter__(self):
         """
         iterate over the motifs

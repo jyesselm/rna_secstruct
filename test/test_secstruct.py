@@ -21,6 +21,14 @@ def test_simple():
     assert struct[0].sequence == "GGG&CCC"
 
 
+def test_itermotifs():
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    inds = []
+    for i, motif in struct.itermotifs():
+        inds.append(i)
+    assert inds == [0, 1]
+
+
 def test_change_motif_simple():
     """
     testing changing a motif
