@@ -58,7 +58,7 @@ class SecStruct:
         """
         return iter(self.motifs.values())
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Motif:
         """
         get a motif by id
         """

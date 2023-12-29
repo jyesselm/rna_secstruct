@@ -12,9 +12,10 @@ class Motif:
 
     def __init__(self, m_type, strands, sequence, structure, m_id):
         """
-        Setup a new motif object
+        Setup a new motif object, usually is not called directly but rather 
+        is generated in Parser::parse.
         :param m_type: type of motif (SINGLESTRAND, HAIRPIN, HELIX, JUNCTION)
-        :param strands:
+        :param strands: a list of indices 
         :param sequence:
         :param structure:
         :param m_id:

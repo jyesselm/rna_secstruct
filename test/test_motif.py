@@ -33,6 +33,15 @@ def test_simple():
     # TODO fix this
     # print(m.recursive_sequence())
 
+def test_custom():
+    m = Motif("HELIX", [[0, 1, 2], [3, 4, 5]], "GGG&CCC", "(((&)))", 0)
+    m1 = Motif("HELIX", [[0, 1, 2], [3, 4, 5]], "GGG&CCC", "(((&)))", 0)
+    m.add_child(m1)
+    print(m.recursive_sequence())
+
+
+
+
 
 def test_other_getters():
     """
