@@ -6,6 +6,9 @@ import re
 from typing import List
 
 from rna_secstruct.motif import Motif
+from rna_secstruct.logger import get_logger
+
+log = get_logger("parser")
 
 
 def is_valid_dot_bracket_str(structure: str) -> bool:
@@ -37,7 +40,7 @@ def is_valid_dot_bracket_str(structure: str) -> bool:
     for ii in range(3):
         invalid = "(" + "." * ii + ")"
         if structure.find(invalid) != -1:
-            raise ValueError(f"{structure} has a hairpin that is too small")
+            log.warn(f"{structure} has a hairpin that is too small")
 
     return True
 
@@ -110,7 +113,7 @@ class Parser:
                 f" {sequence} {structure}"
             )
         if not re.match(r"^[ACGUTN&]+$", sequence):
-            raise ValueError(f"sequence contains invalid characters: {sequence}")
+            log.warn(f"sequence contains invalid characters: {sequence}")
         if not re.match(r"^[().&]+$", structure):
             raise ValueError(f"structure contains invalid characters: {structure}")
         is_valid_dot_bracket_str(structure)
