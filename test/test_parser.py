@@ -49,6 +49,7 @@ def test_in_valid_dot_brackets():
     with pytest.raises(ValueError):
         p.parse("GGGAAACCC", "(((...)))(")
     # DONT want this anymore can catch at another level
+    p.parse("GGGAAACCC", "()((...))")
     # with pytest.raises(ValueError):
     #    p.parse("GGGAAACCC", "()((...))")
     # bad sequence

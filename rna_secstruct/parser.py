@@ -40,7 +40,7 @@ def is_valid_dot_bracket_str(structure: str) -> bool:
     for ii in range(3):
         invalid = "(" + "." * ii + ")"
         if structure.find(invalid) != -1:
-            log.warn(f"{structure} has a hairpin that is too small")
+            log.warning(f"{structure} has a hairpin that is too small")
 
     return True
 
@@ -113,7 +113,7 @@ class Parser:
                 f" {sequence} {structure}"
             )
         if not re.match(r"^[ACGUTN&]+$", sequence):
-            log.warn(f"sequence contains invalid characters: {sequence}")
+            log.warning(f"sequence contains invalid characters: {sequence}")
         if not re.match(r"^[().&]+$", structure):
             raise ValueError(f"structure contains invalid characters: {structure}")
         is_valid_dot_bracket_str(structure)
