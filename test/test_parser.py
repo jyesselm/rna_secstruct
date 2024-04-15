@@ -1,8 +1,9 @@
 """
 testing secondary structure parsing
 """
+
 import pytest
-from rna_secstruct.parser import Parser, connectivity_list
+from rna_secstruct.parser import Parser, connectivity_list, ConnectivityList
 
 
 # helper funcs ###############################################################
@@ -38,6 +39,54 @@ def test_connectivity_list():
     ss = "(((...)))"
     connections = connectivity_list(ss)
     assert connections == [8, 7, 6, -1, -1, -1, 2, 1, 0]
+
+
+def test_connectivity_list_is_nucleotide_paired():
+    """
+    test is_nucleotide_paired method of ConnectivityList
+    """
+    seq = "GGGAAACCC"
+    ss = "(((...)))"
+    cl = ConnectivityList(seq, ss)
+    assert cl.is_nucleotide_paired(0) == True
+    assert cl.is_nucleotide_paired(1) == True
+    assert cl.is_nucleotide_paired(2) == True
+    assert cl.is_nucleotide_paired(3) == False
+    assert cl.is_nucleotide_paired(4) == False
+    assert cl.is_nucleotide_paired(5) == False
+    assert cl.is_nucleotide_paired(6) == True
+    assert cl.is_nucleotide_paired(7) == True
+    assert cl.is_nucleotide_paired(8) == True
+
+
+def test_connectivity_list_get_paired_nucleotide():
+    """
+    test get_paired_nucleotide method of ConnectivityList
+    """
+    seq = "GGGAAACCC"
+    ss = "(((...)))"
+    cl = ConnectivityList(seq, ss)
+    assert cl.get_paired_nucleotide(0) == 8
+    assert cl.get_paired_nucleotide(1) == 7
+    assert cl.get_paired_nucleotide(2) == 6
+    assert cl.get_paired_nucleotide(6) == 2
+    assert cl.get_paired_nucleotide(7) == 1
+    assert cl.get_paired_nucleotide(8) == 0
+
+
+def test_connectivity_list_get_basepair():
+    """
+    test get_basepair method of ConnectivityList
+    """
+    seq = "GGGAAACCC"
+    ss = "(((...)))"
+    cl = ConnectivityList(seq, ss)
+    assert cl.get_basepair(0) == "GC"
+    assert cl.get_basepair(1) == "GC"
+    assert cl.get_basepair(2) == "GC"
+    assert cl.get_basepair(6) == "CG"
+    assert cl.get_basepair(7) == "CG"
+    assert cl.get_basepair(8) == "CG"
 
 
 def test_in_valid_dot_brackets():

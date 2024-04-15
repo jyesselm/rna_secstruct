@@ -2,8 +2,10 @@
 A simple parser of rna secondary structure inspired by `rna_library` code written
 by Chris Jurich
 """
+
 import re
-from typing import List
+from typing import List, Dict
+from dataclasses import dataclass
 
 from rna_secstruct.motif import Motif
 from rna_secstruct.logger import get_logger
@@ -67,6 +69,42 @@ def connectivity_list(structure: str) -> List[int]:
     if len(pairs):
         raise TypeError("Unbalanced parentheses in structure")
     return connections
+
+
+class ConnectivityList:
+    """ """
+
+    def __init__(self, sequence, structure):
+        self.connections = connectivity_list(structure)
+        self.sequence = sequence
+
+    def is_nucleotide_paired(self, index: int) -> bool:
+        """
+        Returns whether a nucleotide at a given index is paired.
+        :param: int index: index of the nucleotide
+        :rtype: bool
+        """
+        return self.connections[index] != -1
+
+    def get_paired_nucleotide(self, index: int) -> int:
+        """
+        Returns the index of the nucleotide paired with the nucleotide at the given index.
+        :param: int index: index of the nucleotide
+        :rtype: int
+        """
+        if not self.is_nucleotide_paired(index):
+            raise ValueError(f"Nucleotide at index {index} is not paired")
+        return self.connections[index]
+
+    def get_basepair(self, index: int) -> str:
+        """
+        Returns the base pair of the nucleotide at the given index.
+        :param: int index: index of the nucleotide
+        :rtype: str
+        """
+        if not self.is_nucleotide_paired(index):
+            return "."
+        return self.sequence[index] + self.sequence[self.get_paired_nucleotide(index)]
 
 
 def is_circular(start, connections):
