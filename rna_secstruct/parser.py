@@ -4,7 +4,7 @@ by Chris Jurich
 """
 
 import re
-from typing import List, Dict
+from typing import List, Dict, Tuple, Optional
 from dataclasses import dataclass
 
 from rna_secstruct.motif import Motif
@@ -16,8 +16,16 @@ log = get_logger("parser")
 def is_valid_dot_bracket_str(structure: str) -> bool:
     """
     Checks if a structure is a valid dot-bracket structure containing only
-    '(', '.' or ')' characters.
-    :param: str structure: dot bracket structure
+    '(', '.' or ')' characters. Also checks if the structure is balanced.
+
+    Args:
+        structure (str): The dot bracket structure to be checked.
+
+    Returns:
+        bool: True if the structure is valid, False otherwise.
+
+    Raises:
+        ValueError: If the structure contains invalid characters or is unbalanced.
     """
     lparen_ct = 0
     for ch in structure:
@@ -48,15 +56,20 @@ def is_valid_dot_bracket_str(structure: str) -> bool:
 
 
 def connectivity_list(structure: str) -> List[int]:
-    """
-    Generates a connectivity list or pairmap from a dot-bracket secondary structure.
-    The list has the index of a positions complement, is it is a '.' it will have
-    a -1 instead.
+    """Generates a connectivity list or pairmap from a dot-bracket secondary structure.
 
-    :param structure: a dot-bracket structure
-    :rtype: list[int]
-    :raises TypeError: if the number of left parentheses exceeds the number of
-     right parentheses
+    The list has the index of a position's complement, if it is a '.', it will have a
+      -1 instead.
+
+    Args:
+        structure (str): A dot-bracket structure.
+
+    Returns:
+        List[int]: The connectivity list or pairmap.
+
+    Raises:
+        TypeError: If the number of left parentheses exceeds the number of right
+          parentheses.
     """
     connections, pairs = [-1] * len(structure), []
     for index, db in enumerate(structure):
@@ -72,35 +85,63 @@ def connectivity_list(structure: str) -> List[int]:
 
 
 class ConnectivityList:
-    """ """
+    """Represents a connectivity list for RNA secondary structure.
 
-    def __init__(self, sequence, structure):
+    Attributes:
+        connections (List[int]): A list of indices representing the connectivity
+            between nucleotides.
+        sequence (str): The RNA sequence.
+    """
+
+    def __init__(self, sequence: str, structure: str):
+        """Initializes a ConnectivityList object.
+
+        Args:
+            sequence (str): The RNA sequence.
+            structure (str): The RNA secondary structure.
+
+        """
         self.connections = connectivity_list(structure)
         self.sequence = sequence
 
     def is_nucleotide_paired(self, index: int) -> bool:
-        """
-        Returns whether a nucleotide at a given index is paired.
-        :param: int index: index of the nucleotide
-        :rtype: bool
+        """Checks if a nucleotide at a given index is paired.
+
+        Args:
+            index (int): The index of the nucleotide.
+
+        Returns:
+            bool: True if the nucleotide is paired, False otherwise.
+
         """
         return self.connections[index] != -1
 
     def get_paired_nucleotide(self, index: int) -> int:
-        """
-        Returns the index of the nucleotide paired with the nucleotide at the given index.
-        :param: int index: index of the nucleotide
-        :rtype: int
+        """Returns the index of the nucleotide paired with the nucleotide at the given index.
+
+        Args:
+            index (int): The index of the nucleotide.
+
+        Returns:
+            int: The index of the paired nucleotide.
+
+        Raises:
+            ValueError: If the nucleotide at the given index is not paired.
+
         """
         if not self.is_nucleotide_paired(index):
             raise ValueError(f"Nucleotide at index {index} is not paired")
         return self.connections[index]
 
     def get_basepair(self, index: int) -> str:
-        """
-        Returns the base pair of the nucleotide at the given index.
-        :param: int index: index of the nucleotide
-        :rtype: str
+        """Returns the base pair of the nucleotide at the given index.
+
+        Args:
+            index (int): The index of the nucleotide.
+
+        Returns:
+            str: The base pair of the nucleotide.
+
         """
         if not self.is_nucleotide_paired(index):
             return "."
@@ -108,6 +149,15 @@ class ConnectivityList:
 
 
 def is_circular(start, connections):
+    """Check if a given RNA structure is circular.
+
+    Args:
+        start (int): The starting index of the RNA structure.
+        connections (List[int]): A list of connections between nucleotides.
+
+    Returns:
+        bool: True if the RNA structure is circular, False otherwise.
+    """
     it = start + 1
     while True:
         while it < len(connections) and connections[it] == -1:
@@ -121,25 +171,41 @@ def is_circular(start, connections):
 
 
 class Parser:
-    """
-    A class to parse secondary structure into motifs
-    """
+    """A class to parse secondary structure into motifs."""
 
     def __init__(self):
         self.motif_id = 0
 
-    def parse(self, sequence, structure):
+    def parse(self, sequence: str, structure: str) -> None:
+        """
+        Parse the given sequence and structure into motifs.
+
+        Args:
+            sequence: A sequence of nucleotides.
+            structure: A dot bracket structure.
+
+        Returns:
+            None
+        """
         self.motif_id = 0
         self.__check_to_see_if_inputs_valid(sequence, structure)
         connections = connectivity_list(structure)
         return self.__get_motifs(sequence, structure, connections, 0)
 
-    def __check_to_see_if_inputs_valid(self, sequence, structure):
+    def __check_to_see_if_inputs_valid(self, sequence: str, structure: str) -> None:
         """
-        check to see if the inputs are valid
-        :param sequence: a sequence of nucleotides
-        :param structure:
-        :return: None
+        Check if the inputs are valid.
+
+        Args:
+            sequence: A sequence of nucleotides.
+            structure: A dot bracket structure.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If the sequence is empty or if the sequence and structure
+                have different lengths.
         """
         if len(sequence) == 0:
             raise ValueError("Sequence is empty")
@@ -147,8 +213,7 @@ class Parser:
         sequence = sequence.upper().replace("T", "U")
         if len(sequence) != len(structure):
             raise ValueError(
-                f"sequence and structure are not the same length:"
-                f" {sequence} {structure}"
+                f"sequence and structure are not the same length: {sequence} {structure}"
             )
         if not re.match(r"^[ACGUTN&]+$", sequence):
             log.warning(f"sequence contains invalid characters: {sequence}")
@@ -156,13 +221,20 @@ class Parser:
             raise ValueError(f"structure contains invalid characters: {structure}")
         is_valid_dot_bracket_str(structure)
 
-    def __get_motifs(self, sequence, structure, connections, start):
+    def __get_motifs(
+        self, sequence: str, structure: str, connections: List[int], start: int
+    ) -> Optional[Motif]:
         """
-        get the motifs from the structure
-        :param sequence: a sequence of nucleotides
-        :param structure: a dot bracket structure
-        :param connections: a list of connections
-        :return: a list of motifs
+        Get the motifs from the structure.
+
+        Args:
+            sequence: A sequence of nucleotides.
+            structure: A dot bracket structure.
+            connections: A list of connections.
+            start: The start index.
+
+        Returns:
+            A list of motifs or None.
         """
         motifs = []
         if start >= len(connections):
@@ -171,13 +243,20 @@ class Parser:
             return self.__get_single_strand(sequence, structure, connections, start)
         return self.__get_helix(sequence, structure, connections, start)
 
-    def __get_single_strand(self, sequence, structure, connections, start):
+    def __get_single_strand(
+        self, sequence: str, structure: str, connections: List[int], start: int
+    ) -> Motif:
         """
-        get a single strand
-        :param sequence: a sequence of nucleotides
-        :param connections: a list of connections
-        :param start: the start of the single strand
-        :return: a single strand
+        Get a single strand.
+
+        Args:
+            sequence: A sequence of nucleotides.
+            structure: A dot bracket structure.
+            connections: A list of connections.
+            start: The start index.
+
+        Returns:
+            A single strand motif.
         """
         # how many nucleotides are in the single strand
         single_strand_count = 0
@@ -203,13 +282,20 @@ class Parser:
             )
         return sstrand
 
-    def __get_helix(self, sequence, structure, connections, start):
+    def __get_helix(
+        self, sequence: str, structure: str, connections: List[int], start: int
+    ) -> Motif:
         """
-        get a helix or junction
-        :param sequence: a sequence of nucleotides
-        :param connections: a list of connections
-        :param start: the start of the helix or junction
-        :return: a helix or junction
+        Get a helix or junction.
+
+        Args:
+            sequence: A sequence of nucleotides.
+            structure: A dot bracket structure.
+            connections: A list of connections.
+            start: The start index.
+
+        Returns:
+            A helix or junction motif.
         """
         helix_len = self.__get_helix_length(connections, start)
         lhs, rhs = [], []
@@ -236,14 +322,20 @@ class Parser:
                 helix.add_child(motif)
         return helix
 
-    def __get_junction_or_hairpin(self, sequence, structure, connections, start):
+    def __get_junction_or_hairpin(
+        self, sequence: str, structure: str, connections: List[int], start: int
+    ) -> Motif:
         """
-        get a junction or hairpin
-        :param sequence:
-        :param structure:
-        :param connections:
-        :param start:
-        :return:
+        Get a junction or hairpin.
+
+        Args:
+            sequence: A sequence of nucleotides.
+            structure: A dot bracket structure.
+            connections: A list of connections.
+            start: The start index.
+
+        Returns:
+            A junction or hairpin motif.
         """
         strands = []
         pos = start
@@ -281,12 +373,16 @@ class Parser:
             seq, ss = self.__get_seq_and_ss_from_strand(sequence, structure, strands[0])
             return Motif("HAIRPIN", strands, seq, ss, self.motif_id - 1)
 
-    def __get_helix_length(self, connections, start):
+    def __get_helix_length(self, connections: List[int], start: int) -> int:
         """
-        get the length of a helix
-        :param connections: a list of connections
-        :param start: the start of the helix
-        :return: the length of the helix
+        Get the length of a helix.
+
+        Args:
+            connections: A list of connections.
+            start: The start index.
+
+        Returns:
+            The length of the helix.
         """
         complement = connections[start]
         length = 0
@@ -297,10 +393,19 @@ class Parser:
             length += 1
         return length
 
-    def __get_seq_and_ss_from_strand(self, sequence, structure, strand):
+    def __get_seq_and_ss_from_strand(
+        self, sequence: str, structure: str, strand: List[int]
+    ) -> Tuple[str, str]:
         """
-        get the sequence and secondary structure from a strand
-        :return: the sequence and secondary structure
+        Get the sequence and secondary structure from a strand.
+
+        Args:
+            sequence: A sequence of nucleotides.
+            structure: A dot bracket structure.
+            strand: A list of indices representing the strand.
+
+        Returns:
+            The sequence and secondary structure.
         """
         seq = "".join([sequence[i] for i in strand])
         ss = "".join([structure[i] for i in strand])
