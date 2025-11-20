@@ -3,7 +3,7 @@ Tests for mixed format connectivity (brackets + letters/numbers).
 """
 
 import pytest
-from rna_secstruct.connectivity import get_connectivity_list, detect_structure_format
+from rna_secstruct.connectivity import get_connectivity_list, _detect_structure_format
 
 
 class TestMixedFormats:
@@ -11,12 +11,13 @@ class TestMixedFormats:
 
     def test_mixed_brackets_and_letters(self):
         """Test structure with brackets and letters mixed together."""
+        # Structure and sequence must have same length
         structure = "(((aaa(((...)))aaa)))"
-        seq = "GGGAAACCC"
+        seq = "GGGAAACCCUUUAAAGGGCCC"  # 21 nucleotides to match structure
         cl = get_connectivity_list(seq, structure)
         
         # Should detect as mixed format
-        assert detect_structure_format(structure) == "mixed"
+        assert _detect_structure_format(structure) == "mixed"
         
         # Check bracket pairs
         assert cl.get_pair_type(0) == "("  # Opening bracket
@@ -40,11 +41,11 @@ class TestMixedFormats:
     def test_letters_with_brackets(self):
         """Test structure with letters and brackets."""
         structure = "aaa(((...)))aaa"
-        seq = "GGGAAACCC"
+        seq = "GGGAAACCCUUUAAA"  # 15 nucleotides to match structure
         cl = get_connectivity_list(seq, structure)
         
         # Should detect as mixed format
-        assert detect_structure_format(structure) == "mixed"
+        assert _detect_structure_format(structure) == "mixed"
         
         # Check bracket pairs
         assert cl.get_pair_type(3) == "("  # Opening bracket
@@ -61,11 +62,11 @@ class TestMixedFormats:
     def test_mixed_brackets_and_numbers(self):
         """Test structure with brackets and numbers."""
         structure = "(((111(((...)))111)))"
-        seq = "GGGAAACCC"
+        seq = "GGGAAACCCUUUAAAGGGCCC"  # 21 nucleotides to match structure
         cl = get_connectivity_list(seq, structure)
         
         # Should detect as mixed format
-        assert detect_structure_format(structure) == "mixed"
+        assert _detect_structure_format(structure) == "mixed"
         
         # Check bracket pairs exist
         assert cl.get_pair_type(0) == "("
@@ -81,7 +82,7 @@ class TestMixedFormats:
     def test_pure_bracket_with_letters_ignored(self):
         """Test that pure bracket format ignores letters when not in mixed mode."""
         structure = "((x...))"
-        seq = "GGGAAACCC"
+        seq = "GGGAAACC"  # 8 nucleotides to match structure
         cl = get_connectivity_list(seq, structure, format="bracket")
         
         # 'x' should be ignored (not treated as a letter to pair)
