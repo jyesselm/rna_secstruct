@@ -225,3 +225,45 @@ def test_display():
     struct_str = struct.to_str()
     with open(os.path.join(CUR_DIR, "resources", "test_display.txt")) as fin:
         assert struct_str == fin.read().strip()
+
+
+def test_lazy_loading():
+    """
+    Test that lazy loading works correctly - parsing only happens when motifs are accessed.
+    """
+    # Create a structure - should not parse immediately
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    
+    # Accessing sequence/structure should not trigger parsing
+    assert struct.sequence == "GGGAAACCC"
+    assert struct.structure == "(((...)))"
+    
+    # __repr__ should not trigger parsing
+    repr_str = repr(struct)
+    assert "GGGAAACCC" in repr_str
+    
+    # __add__ should not trigger parsing
+    struct2 = SecStruct("AAA", "...")
+    combined = struct + struct2
+    assert combined.sequence == "GGGAAACCCAAA"
+    assert combined.structure == "(((...)))..."
+    
+    # Accessing motifs should trigger parsing
+    # After accessing motifs, they should be cached
+    motifs = struct.motifs
+    assert len(motifs) == 2
+    assert 0 in motifs
+    assert 1 in motifs
+    
+    # Accessing again should use cached version
+    motifs2 = struct.motifs
+    assert motifs is motifs2  # Should be the same object (cached)
+    
+    # Accessing _root should also work
+    root = struct._root
+    assert root is not None
+    
+    # get_num_motifs should trigger parsing if not already done
+    struct3 = SecStruct("GGGAAACCC", "(((...)))")
+    num = struct3.get_num_motifs()
+    assert num == 2

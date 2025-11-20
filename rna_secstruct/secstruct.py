@@ -30,21 +30,33 @@ class SecStruct:
 
     def __init__(self, sequence: str, structure: str):
         """
+        Initialize a SecStruct with sequence and structure.
+
+        Parsing is deferred until motifs are actually accessed (lazy loading).
+        This improves performance for large structures when only basic operations
+        are needed.
+
         :param sequence: a sequence of nucleotides
         :param structure: a dot bracket structure
         """
-        self.__root = Parser().parse(sequence, structure)
-        self.__motifs = self.__get_motifs(self.__root)
+        # Validate inputs but don't parse yet
+        if len(sequence) != len(structure):
+            raise ValueError("sequence and structure must be the same length")
+        if sequence.count("&") != structure.count("&"):
+            raise ValueError("sequence and structure must have the same number of strands")
+
         self.__sequence = sequence
         self.__structure = structure
+        # Lazy loading: parse only when motifs are accessed
+        self.__root = None
+        self.__motifs = None
+        self.__parsed = False
 
     def __add__(self, other):
         """
         add two secondary structures together
         """
-        return SecStruct(
-            self.__sequence + other.__sequence, self.__structure + other.__structure
-        )
+        return SecStruct(self.__sequence + other.__sequence, self.__structure + other.__structure)
 
     def itermotifs(self):
         """
@@ -67,7 +79,18 @@ class SecStruct:
         return self.motifs[item]
 
     def __repr__(self):
+        """String representation - does not trigger parsing"""
         return f"{self.__sequence}, {self.__structure}"
+
+    def __parse(self):
+        """
+        Internal method to parse structure when needed (lazy loading).
+        This is called automatically when motifs are first accessed.
+        """
+        if not self.__parsed:
+            self.__root = Parser().parse(self.__sequence, self.__structure)
+            self.__motifs = self.__get_motifs(self.__root)
+            self.__parsed = True
 
     def __get_motifs(self, root):
         """
@@ -100,18 +123,24 @@ class SecStruct:
         """
         change a motif sequence and secondary structure triggering a reparse
         of secondary structure.
+
+        NOTE: This method modifies the SecStruct in place. For immutable
+        operations, consider using replace_motif() which returns a new instance.
+
         :param m_id: the id of the motif to change
         :param sequence: the new sequence
         :param structure: the new structure
         :return: None
         """
+        # Ensure we're parsed before modifying
+        if not self.__parsed:
+            self.__parse()
+
         is_valid_dot_bracket_str(structure)
         if len(sequence) != len(structure):
             raise ValueError("sequence and structure must be the same length")
         if sequence.count("&") != structure.count("&"):
-            raise ValueError(
-                "sequence and structure must have the same number of strands"
-            )
+            raise ValueError("sequence and structure must have the same number of strands")
         m = self[m_id]
         # logic to change motif type only can in number of strands
         if m.num_strands() < sequence.count("&") + 1:
@@ -227,9 +256,7 @@ class SecStruct:
         """
         return self.__get_motifs_by_params(msp)
 
-    def get_motifs_by_token(
-        self, token, msp: Optional[MotifSearchParams] = None
-    ) -> List[Motif]:
+    def get_motifs_by_token(self, token, msp: Optional[MotifSearchParams] = None) -> List[Motif]:
         """
         get a list of motifs by a token
         :param token: the token to search for
@@ -247,10 +274,23 @@ class SecStruct:
 
     # properites ###############################################################
     @property
+    def _root(self):
+        """
+        Get the root motif (lazy-loaded).
+        This property triggers parsing if not already done.
+        """
+        if not self.__parsed:
+            self.__parse()
+        return self.__root
+
+    @property
     def motifs(self):
         """
-        get motifs
+        Get motifs dictionary (lazy-loaded).
+        This property triggers parsing if not already done.
         """
+        if not self.__parsed:
+            self.__parse()
         return self.__motifs
 
     @property
@@ -302,7 +342,8 @@ class SecStruct:
         """
         get the number of motifs
         """
-        return len(self.__motifs)
+        # Access motifs property to trigger lazy parsing if needed
+        return len(self.motifs)
 
     def get_sub_structure(self, root_id):
         m = self[root_id]
@@ -319,4 +360,5 @@ class SecStruct:
         """
         get a string representation of this secondary structure
         """
-        return self.__root.to_str()
+        # Access _root property to trigger lazy parsing if needed
+        return self._root.to_str()

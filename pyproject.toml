@@ -1,0 +1,209 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rna_secstruct"
+version = "0.1.0"
+description = "A minimal package for parsing and editing RNA secondary structure"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Joe Yesselman", email = "jyesselm@unl.edu"}
+]
+maintainers = [
+    {name = "Joe Yesselman", email = "jyesselm@unl.edu"}
+]
+keywords = ["rna", "secondary-structure", "bioinformatics", "rna-structure"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+dependencies = [
+    "wheel>=0.22",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",  # Parallel test execution
+    "black>=23.0.0",
+    "ruff>=0.1.0",  # Fast linter and formatter
+    "mypy>=1.0.0",
+    "types-setuptools",  # Type stubs for setuptools
+    "coverage[toml]>=7.0.0",
+    "build>=0.10.0",  # For building packages
+    "twine>=4.0.0",  # For publishing to PyPI
+]
+pandas = [
+    "pandas>=1.0.0",
+]
+parallel = [
+    "tqdm>=4.0.0",
+    "joblib>=1.0.0",
+]
+all = [
+    "rna_secstruct[pandas,parallel,dev]",
+]
+
+[project.urls]
+Homepage = "https://github.com/jyesselm/rna_secstruct"
+Documentation = "https://github.com/jyesselm/rna_secstruct#readme"
+Repository = "https://github.com/jyesselm/rna_secstruct"
+Issues = "https://github.com/jyesselm/rna_secstruct/issues"
+
+[tool.setuptools]
+packages = ["rna_secstruct"]
+
+[tool.setuptools.package-data]
+rna_secstruct = ["py.typed"]  # For type checking support
+
+# Black code formatter configuration
+[tool.black]
+line-length = 100
+target-version = ["py38", "py39", "py310", "py311", "py312"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | rna_secstruct\.egg-info
+)/
+'''
+
+# Ruff linter configuration (fast alternative to flake8)
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+
+[tool.ruff.isort]
+known-first-party = ["rna_secstruct"]
+
+# MyPy type checker configuration
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Start lenient, can tighten later
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "tests.*",
+    "test.*",
+]
+disallow_untyped_defs = false
+ignore_errors = false
+
+# Pytest configuration
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["test"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+    "--tb=short",
+    "-ra",  # Show extra test summary info
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+# Coverage.py configuration
+[tool.coverage.run]
+source = ["rna_secstruct"]
+omit = [
+    "*/tests/*",
+    "*/test/*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/build/*",
+    "*/dist/*",
+    "*/rna_secstruct.egg-info/*",
+    "*/setup.py",
+    "*/conftest.py",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+fail_under = 80  # Start at 80%, aim for 90%+
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+    "@property",
+    "@.*\\.setter",
+    "class .*\\bProtocol\\):",
+    "if False:",
+    "if typing.TYPE_CHECKING:",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
