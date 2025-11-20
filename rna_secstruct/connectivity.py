@@ -424,7 +424,15 @@ def _detect_structure_format(structure: str) -> str:
 
 
 def _pairs_cross(conn1: List[int], conn2: List[int]) -> bool:
-    """Internal: Check if pairs from two connectivity lists cross each other."""
+    """Internal: Check if pairs from two connectivity lists cross each other.
+
+    Args:
+        conn1: First connectivity list.
+        conn2: Second connectivity list.
+
+    Returns:
+        bool: True if pairs from the two lists cross each other.
+    """
     pairs1 = [(i, conn1[i]) for i in range(len(conn1)) if conn1[i] != -1 and i < conn1[i]]
     pairs2 = [(i, conn2[i]) for i in range(len(conn2)) if conn2[i] != -1 and i < conn2[i]]
 
@@ -533,7 +541,7 @@ class ConnectivityList:
         format: Optional[str] = None,
         bracket_types: Optional[List[Tuple[str, str]]] = None,
     ):
-        """Initializes a ConnectivityList object.
+        """Initialize a ConnectivityList object.
 
         Args:
             sequence: The RNA sequence.
@@ -616,12 +624,12 @@ class ConnectivityList:
             index: The position index.
 
         Returns:
-            str: The pair type (e.g., '(', '[', 'a', '1') or None if unpaired.
+            Optional[str]: The pair type (e.g., '(', '[', 'a', '1') or None if unpaired.
         """
         return self.pair_types.get(index)
 
     def is_nucleotide_paired(self, index: int) -> bool:
-        """Checks if a nucleotide at a given index is paired.
+        """Check if a nucleotide at a given index is paired.
 
         Args:
             index: The index of the nucleotide.
@@ -632,7 +640,7 @@ class ConnectivityList:
         return self.connections[index] != -1
 
     def get_paired_nucleotide(self, index: int) -> int:
-        """Returns the index of the nucleotide paired with the nucleotide at the given index.
+        """Get the index of the nucleotide paired with the nucleotide at the given index.
 
         Args:
             index: The index of the nucleotide.
@@ -648,7 +656,7 @@ class ConnectivityList:
         return self.connections[index]
 
     def get_basepair(self, index: int) -> str:
-        """Returns the base pair of the nucleotide at the given index.
+        """Get the base pair of the nucleotide at the given index.
 
         Args:
             index: The index of the nucleotide.

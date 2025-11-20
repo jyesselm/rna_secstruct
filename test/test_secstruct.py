@@ -267,3 +267,222 @@ def test_lazy_loading():
     struct3 = SecStruct("GGGAAACCC", "(((...)))")
     num = struct3.get_num_motifs()
     assert num == 2
+
+
+def test_len():
+    """
+    Test __len__ method
+    """
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    assert len(struct) == 9
+    assert len(struct) == len(struct.sequence)
+
+
+def test_slicing():
+    """
+    Test slicing support in __getitem__
+    """
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    
+    # Test slicing returns new SecStruct
+    sliced = struct[2:7]
+    assert isinstance(sliced, SecStruct)
+    assert sliced.sequence == "GAAAC"
+    assert sliced.structure == "(...)"
+    
+    # Original unchanged
+    assert struct.sequence == "GGGAAACCC"
+    
+    # Test full slice
+    full = struct[:]
+    assert full.sequence == struct.sequence
+    assert full.structure == struct.structure
+    assert full is not struct  # Different object
+    
+    # Test motif access still works
+    motif = struct[0]
+    assert motif.m_id == 0
+
+
+def test_split_strands():
+    """
+    Test split_strands method
+    """
+    struct = SecStruct("GGG&AAA&CCC", "(((&)))&...")
+    strands = struct.split_strands()
+    
+    assert len(strands) == 3
+    assert strands[0].sequence == "GGG"
+    assert strands[0].structure == "((("
+    assert strands[1].sequence == "AAA"
+    assert strands[1].structure == ")))"
+    assert strands[2].sequence == "CCC"
+    assert strands[2].structure == "..."
+    
+    # Original unchanged
+    assert struct.sequence == "GGG&AAA&CCC"
+    
+    # Single strand
+    struct2 = SecStruct("GGGAAACCC", "(((...)))")
+    strands2 = struct2.split_strands()
+    assert len(strands2) == 1
+    assert strands2[0].sequence == "GGGAAACCC"
+
+
+def test_insert():
+    """
+    Test insert method (immutable)
+    """
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    other = SecStruct("XXX", "...")
+    
+    # Insert at beginning
+    result = struct.insert(0, other)
+    assert result.sequence == "XXXGGGAAACCC"
+    assert result.structure == "...(((...)))"
+    assert struct.sequence == "GGGAAACCC"  # Original unchanged
+    
+    # Insert in middle
+    result2 = struct.insert(3, other)
+    assert result2.sequence == "GGGXXXAAACCC"
+    assert result2.structure == "(((...)))"  # Structure: "(((" + "..." + "...)))" = "(((...)))" (12 chars)
+    
+    # Insert at end
+    result3 = struct.insert(9, other)
+    assert result3.sequence == "GGGAAACCCXXX"
+    assert result3.structure == "(((...)))..."
+    
+    # Test invalid position
+    with pytest.raises(ValueError):
+        struct.insert(-1, other)
+    with pytest.raises(ValueError):
+        struct.insert(10, other)
+
+
+def test_join():
+    """
+    Test join method (immutable)
+    """
+    struct1 = SecStruct("GGG", "(((")
+    struct2 = SecStruct("AAA", "...")
+    
+    result = struct1.join(struct2)
+    assert result.sequence == "GGG&AAA"
+    assert result.structure == "(((&..."
+    assert struct1.sequence == "GGG"  # Original unchanged
+    assert struct2.sequence == "AAA"  # Original unchanged
+
+
+def test_replace():
+    """
+    Test replace method (immutable)
+    """
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    other = SecStruct("XXX", "...")
+    
+    # Replace in middle
+    result = struct.replace(other, 3)
+    assert result.sequence == "GGGXXXCCC"
+    assert result.structure == "(((...)))"  # Structure adjusted
+    assert struct.sequence == "GGGAAACCC"  # Original unchanged
+    
+    # Replace at beginning
+    result2 = struct.replace(other, 0)
+    assert result2.sequence == "XXXAAACCC"
+    
+    # Test invalid position
+    with pytest.raises(ValueError):
+        struct.replace(other, -1)
+    with pytest.raises(ValueError):
+        struct.replace(other, 10)
+    with pytest.raises(ValueError):
+        struct.replace(SecStruct("XXXXXXXXXX", ".........."), 0)
+
+
+def test_remove():
+    """
+    Test remove method (immutable)
+    """
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    
+    # Remove middle region
+    result = struct.remove(3, 6)
+    assert result.sequence == "GGGCCC"
+    assert result.structure == "((()))"  # Adjusted
+    assert struct.sequence == "GGGAAACCC"  # Original unchanged
+    
+    # Remove from beginning
+    result2 = struct.remove(0, 3)
+    assert result2.sequence == "AAACCC"
+    
+    # Remove from end
+    result3 = struct.remove(6, 9)
+    assert result3.sequence == "GGGAAA"
+    
+    # Test invalid ranges
+    with pytest.raises(ValueError):
+        struct.remove(-1, 5)
+    with pytest.raises(ValueError):
+        struct.remove(3, 10)
+    with pytest.raises(ValueError):
+        struct.remove(5, 3)  # start >= end
+
+
+def test_subtract():
+    """
+    Test subtract method (immutable)
+    """
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    other = SecStruct("AAA", "...")
+    
+    # Subtract found substructure
+    result = struct.subtract(other)
+    assert result.sequence == "GGGCCC"
+    assert struct.sequence == "GGGAAACCC"  # Original unchanged
+    
+    # Test not found
+    with pytest.raises(ValueError, match="Substructure not found"):
+        struct.subtract(SecStruct("XXX", "..."))
+
+
+def test_to_dict():
+    """
+    Test to_dict method
+    """
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    d = struct.to_dict()
+    
+    assert isinstance(d, dict)
+    assert d["sequence"] == "GGGAAACCC"
+    assert d["structure"] == "(((...)))"
+
+
+def test_to_comma_delimited():
+    """
+    Test to_comma_delimited method
+    """
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    csv = struct.to_comma_delimited()
+    
+    assert csv == "GGGAAACCC,(((...)))"
+    assert isinstance(csv, str)
+
+
+def test_immutable_pattern():
+    """
+    Test that all manipulation methods return new instances (immutable pattern)
+    """
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    original_id = id(struct)
+    
+    # Test that operations return new instances
+    assert id(struct.insert(3, SecStruct("X", "."))) != original_id
+    assert id(struct.join(SecStruct("X", "."))) != original_id
+    assert id(struct.replace(SecStruct("X", "."), 0)) != original_id
+    assert id(struct.remove(3, 6)) != original_id
+    assert id(struct.subtract(SecStruct("AAA", "..."))) != original_id
+    assert id(struct[2:7]) != original_id  # Slicing
+    
+    # Original should be unchanged
+    assert struct.sequence == "GGGAAACCC"
+    assert id(struct) == original_id
