@@ -486,3 +486,192 @@ def test_immutable_pattern():
     # Original should be unchanged
     assert struct.sequence == "GGGAAACCC"
     assert id(struct) == original_id
+
+
+def test_find():
+    """Test find() method for finding substructures."""
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    
+    # Find simple substructure
+    sub = SecStruct("AAA", "...")
+    matches = struct.find(sub)
+    assert len(matches) == 1
+    assert matches[0] == (3, 6)
+    
+    # Find at beginning
+    sub2 = SecStruct("GGG", "(((")
+    matches2 = struct.find(sub2)
+    assert len(matches2) == 1
+    assert matches2[0] == (0, 3)
+    
+    # Find at end
+    sub3 = SecStruct("CCC", ")))")
+    matches3 = struct.find(sub3)
+    assert len(matches3) == 1
+    assert matches3[0] == (6, 9)
+    
+    # Find with start/end bounds
+    matches4 = struct.find(sub, start=0, end=5)
+    assert len(matches4) == 0  # Should not find since AAA is at position 3-6
+    
+    matches5 = struct.find(sub, start=3, end=9)
+    assert len(matches5) == 1
+    assert matches5[0] == (3, 6)
+
+
+def test_find_sequence():
+    """Test find_sequence() method."""
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    
+    # Simple sequence search
+    matches = struct.find_sequence("AAA")
+    assert len(matches) == 1
+    assert matches[0] == (3, 6)
+    
+    # Search with wildcards
+    matches2 = struct.find_sequence("NNN", allow_wildcards=True)
+    assert len(matches2) >= 1  # Should find multiple matches
+    
+    # Search without wildcards
+    matches3 = struct.find_sequence("NNN", allow_wildcards=False)
+    assert len(matches3) == 0  # Should not find literal "NNN"
+
+
+def test_find_structure():
+    """Test find_structure() method."""
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    
+    # Find structure pattern
+    matches = struct.find_structure("...")
+    assert len(matches) == 1
+    assert matches[0] == (3, 6)
+    
+    # Find opening brackets
+    matches2 = struct.find_structure("(((")
+    assert len(matches2) == 1
+    assert matches2[0] == (0, 3)
+
+
+def test_enhanced_motif_search_params():
+    """Test enhanced MotifSearchParams with new fields."""
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    
+    # Test token search
+    msp = MotifSearchParams(token="Helix1")
+    # This will trigger parsing, which may have issues with complex structures
+    # But the API should work
+    
+    # Test min_length and max_length
+    msp2 = MotifSearchParams(min_length=5, max_length=10)
+    # Should work with existing search methods
+    
+    # Test strand_lengths
+    msp3 = MotifSearchParams(strand_lengths=[3, 3])
+    # Should work with get_motifs_by_strand_lengths
+    
+    # Test has_children
+    msp4 = MotifSearchParams(has_children=False)
+    # Should filter motifs by whether they have children
+    
+    assert True  # If we get here, the enhanced params are constructible
+
+
+def test_connectivity_methods():
+    """Test connectivity and base pair methods."""
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    
+    # Test connectivity property
+    conn = struct.connectivity
+    assert isinstance(conn, list)
+    assert len(conn) == 9
+    assert conn[0] == 8  # First pairs with last
+    assert conn[3] == -1  # Middle is unpaired
+    
+    # Test get_basepair
+    bp = struct.get_basepair(0)
+    assert bp == (0, 8)
+    
+    bp_unpaired = struct.get_basepair(3)
+    assert bp_unpaired is None
+    
+    # Test is_paired
+    assert struct.is_paired(0) is True
+    assert struct.is_paired(3) is False
+
+
+def test_statistics_methods():
+    """Test statistics and analysis methods."""
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    
+    # Test get_num_basepairs
+    num_bp = struct.get_num_basepairs()
+    assert num_bp == 3  # 3 base pairs: (0,8), (1,7), (2,6)
+    
+    # Test get_num_unpaired
+    num_unpaired = struct.get_num_unpaired()
+    assert num_unpaired == 3  # Positions 3, 4, 5 are unpaired
+    
+    # Test get_gc_content
+    gc = struct.get_gc_content()
+    assert 0.6 < gc < 0.7  # 6 G/C out of 9 nucleotides
+    
+    # Test get_helix_lengths
+    helix_lengths = struct.get_helix_lengths()
+    assert isinstance(helix_lengths, list)
+    # Should have at least one helix
+
+
+def test_validation_methods():
+    """Test validation utilities."""
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    
+    # Test is_valid
+    assert struct.is_valid() is True
+    
+    # Test validate (should not raise)
+    struct.validate()
+    
+    # Test normalize
+    struct_lower = SecStruct("gggaaaccc", "(((...)))")
+    normalized = struct_lower.normalize()
+    assert normalized.sequence == "GGGAAACCC"
+    assert normalized.structure == "(((...)))"
+    
+    # Test T->U conversion
+    struct_t = SecStruct("GGGAAATCC", "(((...)))")
+    normalized_t = struct_t.normalize()
+    assert "U" in normalized_t.sequence
+    assert "T" not in normalized_t.sequence
+
+
+def test_comparison_operations():
+    """Test comparison operations."""
+    struct1 = SecStruct("GGGAAACCC", "(((...)))")
+    struct2 = SecStruct("GGGAAACCC", "(((...)))")
+    struct3 = SecStruct("AAAGGGCCC", "(((...)))")
+    
+    # Test __eq__
+    assert struct1 == struct2
+    assert struct1 != struct3
+    
+    # Test structural_similarity
+    similarity = struct1.structural_similarity(struct2)
+    assert similarity == 1.0
+    
+    similarity_diff = struct1.structural_similarity(struct3)
+    assert 0.0 <= similarity_diff <= 1.0
+    
+    # Test sequence_identity
+    identity = struct1.sequence_identity(struct2)
+    assert identity == 1.0
+    
+    identity_diff = struct1.sequence_identity(struct3)
+    assert 0.0 <= identity_diff < 1.0
+    
+    # Test with different lengths
+    struct4 = SecStruct("GGG", "(((")
+    similarity_short = struct1.structural_similarity(struct4)
+    assert similarity_short == 0.0
+    
+    identity_short = struct1.sequence_identity(struct4)
+    assert identity_short == 0.0

@@ -2,16 +2,30 @@
 representation of secondary structure with motif
 """
 
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 from dataclasses import dataclass
 from rna_secstruct.parser import Parser, is_valid_dot_bracket_str
 from rna_secstruct.motif import Motif
+from rna_secstruct.connectivity import get_connectivity_list
 
 
 @dataclass(order=True)
 class MotifSearchParams:
-    """
-    params for rna design
+    """Parameters for RNA motif search.
+
+    Attributes:
+        sequence: Exact sequence to match.
+        structure: Exact structure to match.
+        m_type: Motif type to match (e.g., 'HELIX', 'HAIRPIN', 'JUNCTION').
+        min_pos: Minimum start position.
+        max_pos: Maximum end position.
+        min_id: Minimum motif ID.
+        max_id: Maximum motif ID.
+        token: Token to match.
+        min_length: Minimum motif length.
+        max_length: Maximum motif length.
+        strand_lengths: List of strand lengths to match.
+        has_children: Whether motif must have children (True) or not (False), or None for any.
     """
 
     sequence: Optional[str] = None
@@ -21,6 +35,11 @@ class MotifSearchParams:
     max_pos: int = 999
     min_id: int = 0
     max_id: int = 999
+    token: Optional[str] = None
+    min_length: int = 0
+    max_length: int = 999999
+    strand_lengths: Optional[List[int]] = None
+    has_children: Optional[bool] = None
 
 
 class SecStruct:
@@ -262,6 +281,19 @@ class SecStruct:
                 continue
             if m.start_pos < msp.min_pos or m.end_pos > msp.max_pos:
                 continue
+            if msp.token is not None and m.token != msp.token:
+                continue
+            motif_length = m.end_pos - m.start_pos
+            if motif_length < msp.min_length or motif_length > msp.max_length:
+                continue
+            if msp.strand_lengths is not None:
+                lengths = [len(s) for s in m.strands]
+                if lengths != msp.strand_lengths:
+                    continue
+            if msp.has_children is not None:
+                has_children = len(m.children) > 0
+                if has_children != msp.has_children:
+                    continue
             motifs.append(m)
         return motifs
 
@@ -344,13 +376,24 @@ class SecStruct:
             List[Motif]: List of motifs with matching token.
         """
         if msp is None:
-            msp = MotifSearchParams()
-        selected_motifs = self.__get_motifs_by_params(msp)
-        motifs = []
-        for m in selected_motifs:
-            if token == m.token:
-                motifs.append(m)
-        return motifs
+            msp = MotifSearchParams(token=token)
+        else:
+            # Create a copy to avoid modifying the original
+            msp = MotifSearchParams(
+                sequence=msp.sequence,
+                structure=msp.structure,
+                m_type=msp.m_type,
+                min_pos=msp.min_pos,
+                max_pos=msp.max_pos,
+                min_id=msp.min_id,
+                max_id=msp.max_id,
+                token=token,  # Override with provided token
+                min_length=msp.min_length,
+                max_length=msp.max_length,
+                strand_lengths=msp.strand_lengths,
+                has_children=msp.has_children,
+            )
+        return self.__get_motifs_by_params(msp)
 
     # properites ###############################################################
     @property
@@ -622,3 +665,313 @@ class SecStruct:
             str: Comma-delimited string: "sequence,structure".
         """
         return f"{self.__sequence},{self.__structure}"
+
+    # Search methods #############################################################
+
+    def find(self, sub: 'SecStruct', start: Optional[int] = None, end: Optional[int] = None) -> List[Tuple[int, int]]:
+        """Find the position(s) of a substructure in this structure.
+
+        Args:
+            sub: The substructure to search for.
+            start: Start position to search from (default: 0).
+            end: End position to search to (default: end of sequence).
+
+        Returns:
+            List[Tuple[int, int]]: List of (start, end) tuples for matches.
+                Each tuple represents the start (inclusive) and end (exclusive) positions.
+        """
+        if start is None:
+            start = 0
+        if end is None:
+            end = len(self.__sequence)
+
+        matches = []
+        sub_seq = sub.__sequence
+        sub_struct = sub.__structure
+
+        # Handle multi-strand structures
+        if "&" in sub_seq:
+            # For multi-strand, need to match across strand boundaries
+            # This is more complex - for now, just search within single strands
+            search_seq = self.__sequence[start:end]
+            search_struct = self.__structure[start:end]
+            pos = search_seq.find(sub_seq)
+            if pos != -1:
+                # Verify structure matches at this position
+                if search_struct[pos:pos + len(sub_seq)] == sub_struct:
+                    matches.append((start + pos, start + pos + len(sub_seq)))
+        else:
+            # Single-strand search
+            search_seq = self.__sequence[start:end]
+            search_struct = self.__structure[start:end]
+            pos = 0
+            while True:
+                pos = search_seq.find(sub_seq, pos)
+                if pos == -1:
+                    break
+                # Verify structure matches at this position
+                if search_struct[pos:pos + len(sub_seq)] == sub_struct:
+                    matches.append((start + pos, start + pos + len(sub_seq)))
+                pos += 1
+
+        return matches
+
+    def find_sequence(self, pattern: str, allow_wildcards: bool = True) -> List[Tuple[int, int]]:
+        """Find positions matching a sequence pattern.
+
+        Supports wildcards: 'N' matches any nucleotide, 'R' matches A/G, etc.
+
+        Args:
+            pattern: Sequence pattern to search for.
+            allow_wildcards: If True, interpret wildcard characters (N, R, Y, etc.).
+
+        Returns:
+            List[Tuple[int, int]]: List of (start, end) tuples for matches.
+        """
+        matches = []
+        if not allow_wildcards:
+            # Simple string search
+            pos = 0
+            while True:
+                pos = self.__sequence.find(pattern, pos)
+                if pos == -1:
+                    break
+                matches.append((pos, pos + len(pattern)))
+                pos += 1
+        else:
+            # Pattern matching with wildcards
+            import re
+            # Convert wildcards to regex
+            regex_pattern = pattern.replace("N", "[AUCG]")
+            regex_pattern = regex_pattern.replace("R", "[AG]")  # Purine
+            regex_pattern = regex_pattern.replace("Y", "[UC]")  # Pyrimidine
+            regex_pattern = regex_pattern.replace("M", "[AC]")  # Amino
+            regex_pattern = regex_pattern.replace("K", "[UG]")  # Keto
+            regex_pattern = regex_pattern.replace("S", "[GC]")  # Strong
+            regex_pattern = regex_pattern.replace("W", "[AU]")  # Weak
+            regex_pattern = regex_pattern.replace("B", "[UCG]")  # Not A
+            regex_pattern = regex_pattern.replace("D", "[AUG]")  # Not C
+            regex_pattern = regex_pattern.replace("H", "[AUC]")  # Not G
+            regex_pattern = regex_pattern.replace("V", "[ACG]")  # Not U
+            regex_pattern = regex_pattern.replace(".", "\\.")  # Escape dots
+
+            for match in re.finditer(regex_pattern, self.__sequence):
+                matches.append((match.start(), match.end()))
+
+        return matches
+
+    def find_structure(self, pattern: str) -> List[Tuple[int, int]]:
+        """Find positions matching a structure pattern.
+
+        Args:
+            pattern: Structure pattern to search for (e.g., "(((...)))").
+
+        Returns:
+            List[Tuple[int, int]]: List of (start, end) tuples for matches.
+        """
+        matches = []
+        pos = 0
+        while True:
+            pos = self.__structure.find(pattern, pos)
+            if pos == -1:
+                break
+            matches.append((pos, pos + len(pattern)))
+            pos += 1
+        return matches
+
+    # Connectivity and base pair methods #########################################
+
+    @property
+    def connectivity(self) -> List[int]:
+        """Get connectivity list (pairmap).
+
+        Returns:
+            List[int]: Connectivity list where each index contains the paired
+                position or -1 if unpaired.
+        """
+        from rna_secstruct.connectivity import connectivity_list
+        return connectivity_list(self.__structure)
+
+    def get_basepair(self, index: int) -> Optional[Tuple[int, int]]:
+        """Get base pair for a given position.
+
+        Args:
+            index: The position index.
+
+        Returns:
+            Optional[Tuple[int, int]]: Tuple of (index, paired_index) if paired,
+                None if unpaired.
+        """
+        conn = self.connectivity
+        if conn[index] == -1:
+            return None
+        return (index, conn[index])
+
+    def is_paired(self, index: int) -> bool:
+        """Check if position is paired.
+
+        Args:
+            index: The position index.
+
+        Returns:
+            bool: True if the position is paired, False otherwise.
+        """
+        return self.connectivity[index] != -1
+
+    # Statistics and analysis methods ############################################
+
+    def get_num_basepairs(self) -> int:
+        """Count number of base pairs.
+
+        Returns:
+            int: Number of base pairs in the structure.
+        """
+        conn = self.connectivity
+        # Count pairs, but divide by 2 since each pair is counted twice
+        return sum(1 for i, pair in enumerate(conn) if pair != -1 and i < pair)
+
+    def get_num_unpaired(self) -> int:
+        """Count number of unpaired nucleotides.
+
+        Returns:
+            int: Number of unpaired nucleotides.
+        """
+        conn = self.connectivity
+        return sum(1 for pair in conn if pair == -1)
+
+    def get_gc_content(self) -> float:
+        """Calculate GC content.
+
+        Returns:
+            float: GC content as a fraction (0.0 to 1.0).
+        """
+        if len(self.__sequence) == 0:
+            return 0.0
+        gc_count = sum(1 for nuc in self.__sequence.upper() if nuc in 'GC')
+        return gc_count / len(self.__sequence)
+
+    def get_helix_lengths(self) -> List[int]:
+        """Get lengths of all helices.
+
+        Returns:
+            List[int]: List of helix lengths.
+        """
+        helices = self.get_helices()
+        return [len(h.sequence) for h in helices]
+
+    # Validation utilities #######################################################
+
+    def validate(self) -> None:
+        """Validate structure is well-formed.
+
+        Raises:
+            ValueError: If structure is invalid with detailed explanation.
+        """
+        # Check length match
+        if len(self.__sequence) != len(self.__structure):
+            raise ValueError(
+                f"Sequence and structure must have the same length. "
+                f"Sequence length: {len(self.__sequence)}, structure length: {len(self.__structure)}."
+            )
+
+        # Check strand count match
+        if self.__sequence.count("&") != self.__structure.count("&"):
+            raise ValueError(
+                f"Sequence and structure must have the same number of strands. "
+                f"Sequence has {self.__sequence.count('&') + 1} strands, "
+                f"structure has {self.__structure.count('&') + 1} strands."
+            )
+
+        # Validate structure format
+        is_valid_dot_bracket_str(self.__structure)
+
+        # Validate connectivity (this will raise if structure is malformed)
+        try:
+            _ = self.connectivity
+        except Exception as e:
+            raise ValueError(f"Invalid structure connectivity: {e}") from e
+
+    def is_valid(self) -> bool:
+        """Check if structure is valid (non-raising).
+
+        Returns:
+            bool: True if structure is valid, False otherwise.
+        """
+        try:
+            self.validate()
+            return True
+        except (ValueError, TypeError):
+            return False
+
+    def normalize(self) -> 'SecStruct':
+        """Return normalized version (uppercase, T->U conversion).
+
+        Returns:
+            SecStruct: New SecStruct instance with normalized sequence.
+                Sequence is converted to uppercase and T is converted to U.
+                Structure is unchanged.
+        """
+        normalized_seq = self.__sequence.upper().replace('T', 'U')
+        return SecStruct(normalized_seq, self.__structure)
+
+    # Comparison operations #######################################################
+
+    def __eq__(self, other) -> bool:
+        """Compare two structures for equality.
+
+        Args:
+            other: Another SecStruct to compare with.
+
+        Returns:
+            bool: True if sequences and structures are identical.
+        """
+        if not isinstance(other, SecStruct):
+            return False
+        return (
+            self.__sequence == other.__sequence
+            and self.__structure == other.__structure
+        )
+
+    def structural_similarity(self, other: 'SecStruct') -> float:
+        """Calculate structural similarity score.
+
+        Compares the structure strings and returns the fraction of positions
+        that have the same structure character.
+
+        Args:
+            other: Another SecStruct to compare with.
+
+        Returns:
+            float: Similarity score between 0.0 and 1.0.
+        """
+        if len(self.__structure) != len(other.__structure):
+            return 0.0
+        if len(self.__structure) == 0:
+            return 1.0
+
+        matches = sum(
+            1 for s1, s2 in zip(self.__structure, other.__structure) if s1 == s2
+        )
+        return matches / len(self.__structure)
+
+    def sequence_identity(self, other: 'SecStruct') -> float:
+        """Calculate sequence identity.
+
+        Compares the sequences and returns the fraction of positions
+        that have the same nucleotide.
+
+        Args:
+            other: Another SecStruct to compare with.
+
+        Returns:
+            float: Identity score between 0.0 and 1.0.
+        """
+        if len(self.__sequence) != len(other.__sequence):
+            return 0.0
+        if len(self.__sequence) == 0:
+            return 1.0
+
+        matches = sum(
+            1 for s1, s2 in zip(self.__sequence, other.__sequence) if s1 == s2
+        )
+        return matches / len(self.__sequence)
