@@ -3,3 +3,9 @@ __email__ = 'jyesselm@unl.edu'
 __version__ = '0.1.0'
 
 from .secstruct import SecStruct, MotifSearchParams
+from .connectivity import (
+    get_connectivity_list,
+    ConnectivityList,
+    ConnectivityListFactory,
+    STANDARD_BRACKET_TYPES,
+)

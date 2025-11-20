@@ -55,119 +55,15 @@ def is_valid_dot_bracket_str(structure: str) -> bool:
     return True
 
 
-def connectivity_list(structure: str) -> List[int]:
-    """Generates a connectivity list or pairmap from a dot-bracket secondary structure.
+# Import connectivity functions from connectivity module
+from rna_secstruct.connectivity import (
+    connectivity_list,
+    ConnectivityList,
+    is_circular,
+)
 
-    The list has the index of a position's complement, if it is a '.', it will have a
-      -1 instead.
-
-    Args:
-        structure (str): A dot-bracket structure.
-
-    Returns:
-        List[int]: The connectivity list or pairmap.
-
-    Raises:
-        TypeError: If the number of left parentheses exceeds the number of right
-          parentheses.
-    """
-    connections, pairs = [-1] * len(structure), []
-    for index, db in enumerate(structure):
-        if db == "(":
-            pairs.append(index)
-        elif db == ")":
-            complement = pairs.pop()
-            connections[complement] = index
-            connections[index] = complement
-    if len(pairs):
-        raise TypeError("Unbalanced parentheses in structure")
-    return connections
-
-
-class ConnectivityList:
-    """Represents a connectivity list for RNA secondary structure.
-
-    Attributes:
-        connections (List[int]): A list of indices representing the connectivity
-            between nucleotides.
-        sequence (str): The RNA sequence.
-    """
-
-    def __init__(self, sequence: str, structure: str):
-        """Initializes a ConnectivityList object.
-
-        Args:
-            sequence (str): The RNA sequence.
-            structure (str): The RNA secondary structure.
-
-        """
-        self.connections = connectivity_list(structure)
-        self.sequence = sequence
-
-    def is_nucleotide_paired(self, index: int) -> bool:
-        """Checks if a nucleotide at a given index is paired.
-
-        Args:
-            index (int): The index of the nucleotide.
-
-        Returns:
-            bool: True if the nucleotide is paired, False otherwise.
-
-        """
-        return self.connections[index] != -1
-
-    def get_paired_nucleotide(self, index: int) -> int:
-        """Returns the index of the nucleotide paired with the nucleotide at the given index.
-
-        Args:
-            index (int): The index of the nucleotide.
-
-        Returns:
-            int: The index of the paired nucleotide.
-
-        Raises:
-            ValueError: If the nucleotide at the given index is not paired.
-
-        """
-        if not self.is_nucleotide_paired(index):
-            raise ValueError(f"Nucleotide at index {index} is not paired")
-        return self.connections[index]
-
-    def get_basepair(self, index: int) -> str:
-        """Returns the base pair of the nucleotide at the given index.
-
-        Args:
-            index (int): The index of the nucleotide.
-
-        Returns:
-            str: The base pair of the nucleotide.
-
-        """
-        if not self.is_nucleotide_paired(index):
-            return "."
-        return self.sequence[index] + self.sequence[self.get_paired_nucleotide(index)]
-
-
-def is_circular(start, connections):
-    """Check if a given RNA structure is circular.
-
-    Args:
-        start (int): The starting index of the RNA structure.
-        connections (List[int]): A list of connections between nucleotides.
-
-    Returns:
-        bool: True if the RNA structure is circular, False otherwise.
-    """
-    it = start + 1
-    while True:
-        while it < len(connections) and connections[it] == -1:
-            it += 1
-        if it == len(connections):
-            return False
-
-        it = connections[it] + 1
-        if it == start or it < start:
-            return True
+# Re-export for backward compatibility (deprecated - use connectivity module directly)
+__all__ = ["Parser", "is_valid_dot_bracket_str", "connectivity_list", "ConnectivityList", "is_circular"]
 
 
 class Parser:
@@ -189,7 +85,8 @@ class Parser:
         """
         self.motif_id = 0
         self.__check_to_see_if_inputs_valid(sequence, structure)
-        connections = connectivity_list(structure)
+        # Use connectivity_list with default bracket types for backward compatibility
+        connections = connectivity_list(structure, bracket_types=None)
         return self.__get_motifs(sequence, structure, connections, 0)
 
     def __check_to_see_if_inputs_valid(self, sequence: str, structure: str) -> None:
