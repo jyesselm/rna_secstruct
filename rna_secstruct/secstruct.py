@@ -109,7 +109,7 @@ class SecStruct:
         """
         return iter(self.motifs.values())
 
-    def __getitem__(self, item) -> Union['SecStruct', Motif]:
+    def __getitem__(self, item) -> Union["SecStruct", Motif]:
         """Support both slicing (returns new SecStruct) and motif access (returns Motif).
 
         Slicing follows immutable container pattern - returns new instance.
@@ -125,10 +125,7 @@ class SecStruct:
         """
         if isinstance(item, slice):
             # Slicing returns new SecStruct (immutable)
-            return SecStruct(
-                self.__sequence[item],
-                self.__structure[item]
-            )
+            return SecStruct(self.__sequence[item], self.__structure[item])
         # Existing motif access logic (returns Motif, not SecStruct)
         if item not in self.motifs:
             raise ValueError(f"no motif with id {item}")
@@ -520,7 +517,7 @@ class SecStruct:
 
     # SequenceStructure-like methods (immutable container pattern) ############
 
-    def split_strands(self) -> List['SecStruct']:
+    def split_strands(self) -> List["SecStruct"]:
         """Split both sequence and structure over '&' and return list of SecStruct objects.
 
         Returns new SecStruct instances (immutable container pattern).
@@ -532,7 +529,7 @@ class SecStruct:
         structs = self.__structure.split("&")
         return [SecStruct(s, st) for s, st in zip(seqs, structs)]
 
-    def insert(self, pos: int, other: 'SecStruct') -> 'SecStruct':
+    def insert(self, pos: int, other: "SecStruct") -> "SecStruct":
         """Insert a SecStruct object at a given position.
 
         Returns a NEW SecStruct instance. Original is unchanged (immutable container).
@@ -548,12 +545,14 @@ class SecStruct:
             ValueError: If position is invalid.
         """
         if pos < 0 or pos > len(self.__sequence):
-            raise ValueError(f"Invalid position: {pos}. Must be between 0 and {len(self.__sequence)}")
+            raise ValueError(
+                f"Invalid position: {pos}. Must be between 0 and {len(self.__sequence)}"
+            )
         seq = self.__sequence[:pos] + other.__sequence + self.__sequence[pos:]
         struct = self.__structure[:pos] + other.__structure + self.__structure[pos:]
         return SecStruct(seq, struct)
 
-    def join(self, other: 'SecStruct') -> 'SecStruct':
+    def join(self, other: "SecStruct") -> "SecStruct":
         """Join two SecStruct objects with '&' separating each strand.
 
         Returns a NEW SecStruct instance. Original is unchanged (immutable container).
@@ -569,7 +568,7 @@ class SecStruct:
             self.__structure + "&" + other.__structure,
         )
 
-    def replace(self, other: 'SecStruct', pos: int) -> 'SecStruct':
+    def replace(self, other: "SecStruct", pos: int) -> "SecStruct":
         """Replace sequence and structure at specified position.
 
         Returns a NEW SecStruct instance. Original is unchanged (immutable container).
@@ -585,7 +584,9 @@ class SecStruct:
             ValueError: If position is invalid or replacement extends beyond structure length.
         """
         if pos < 0 or pos > len(self.__sequence):
-            raise ValueError(f"Invalid position: {pos}. Must be between 0 and {len(self.__sequence)}")
+            raise ValueError(
+                f"Invalid position: {pos}. Must be between 0 and {len(self.__sequence)}"
+            )
         if pos + len(other.__sequence) > len(self.__sequence):
             raise ValueError(
                 f"Replacement extends beyond structure length. "
@@ -594,16 +595,16 @@ class SecStruct:
         sequence = (
             self.__sequence[:pos]
             + other.__sequence
-            + self.__sequence[pos + len(other.__sequence):]
+            + self.__sequence[pos + len(other.__sequence) :]
         )
         structure = (
             self.__structure[:pos]
             + other.__structure
-            + self.__structure[pos + len(other.__structure):]
+            + self.__structure[pos + len(other.__structure) :]
         )
         return SecStruct(sequence, structure)
 
-    def remove(self, start: int, end: int) -> 'SecStruct':
+    def remove(self, start: int, end: int) -> "SecStruct":
         """Remove a region from the structure.
 
         Returns a NEW SecStruct instance. Original is unchanged (immutable container).
@@ -627,7 +628,7 @@ class SecStruct:
         struct = self.__structure[:start] + self.__structure[end:]
         return SecStruct(seq, struct)
 
-    def subtract(self, other: 'SecStruct') -> 'SecStruct':
+    def subtract(self, other: "SecStruct") -> "SecStruct":
         """Remove a substructure from this structure (if found).
 
         Returns a NEW SecStruct instance. Original is unchanged (immutable container).
@@ -651,12 +652,19 @@ class SecStruct:
         return self.remove(pos, pos + len(other.__sequence))
 
     def to_dict(self) -> dict:
-        """Return a dictionary representation of the SecStruct.
+        """Convert SecStruct to dictionary (JSON-serializable).
 
         Returns:
-            dict: Dictionary with 'sequence' and 'structure' keys.
+            dict: Dictionary with sequence, structure, and optional motifs.
         """
-        return {"sequence": self.__sequence, "structure": self.__structure}
+        result = {
+            "sequence": self.__sequence,
+            "structure": self.__structure,
+        }
+        # Optionally include motifs if already parsed
+        if self.__parsed:
+            result["motifs"] = [m.to_dict() for m in self.motifs.values()]
+        return result
 
     def to_comma_delimited(self) -> str:
         """Return a CSV representation of the SecStruct.
@@ -668,7 +676,9 @@ class SecStruct:
 
     # Search methods #############################################################
 
-    def find(self, sub: 'SecStruct', start: Optional[int] = None, end: Optional[int] = None) -> List[Tuple[int, int]]:
+    def find(
+        self, sub: "SecStruct", start: Optional[int] = None, end: Optional[int] = None
+    ) -> List[Tuple[int, int]]:
         """Find the position(s) of a substructure in this structure.
 
         Args:
@@ -698,7 +708,7 @@ class SecStruct:
             pos = search_seq.find(sub_seq)
             if pos != -1:
                 # Verify structure matches at this position
-                if search_struct[pos:pos + len(sub_seq)] == sub_struct:
+                if search_struct[pos : pos + len(sub_seq)] == sub_struct:
                     matches.append((start + pos, start + pos + len(sub_seq)))
         else:
             # Single-strand search
@@ -710,7 +720,7 @@ class SecStruct:
                 if pos == -1:
                     break
                 # Verify structure matches at this position
-                if search_struct[pos:pos + len(sub_seq)] == sub_struct:
+                if search_struct[pos : pos + len(sub_seq)] == sub_struct:
                     matches.append((start + pos, start + pos + len(sub_seq)))
                 pos += 1
 
@@ -741,6 +751,7 @@ class SecStruct:
         else:
             # Pattern matching with wildcards
             import re
+
             # Convert wildcards to regex
             regex_pattern = pattern.replace("N", "[AUCG]")
             regex_pattern = regex_pattern.replace("R", "[AG]")  # Purine
@@ -790,6 +801,7 @@ class SecStruct:
                 position or -1 if unpaired.
         """
         from rna_secstruct.connectivity import connectivity_list
+
         return connectivity_list(self.__structure)
 
     def get_basepair(self, index: int) -> Optional[Tuple[int, int]]:
@@ -847,7 +859,7 @@ class SecStruct:
         """
         if len(self.__sequence) == 0:
             return 0.0
-        gc_count = sum(1 for nuc in self.__sequence.upper() if nuc in 'GC')
+        gc_count = sum(1 for nuc in self.__sequence.upper() if nuc in "GC")
         return gc_count / len(self.__sequence)
 
     def get_helix_lengths(self) -> List[int]:
@@ -903,7 +915,7 @@ class SecStruct:
         except (ValueError, TypeError):
             return False
 
-    def normalize(self) -> 'SecStruct':
+    def normalize(self) -> "SecStruct":
         """Return normalized version (uppercase, T->U conversion).
 
         Returns:
@@ -911,7 +923,7 @@ class SecStruct:
                 Sequence is converted to uppercase and T is converted to U.
                 Structure is unchanged.
         """
-        normalized_seq = self.__sequence.upper().replace('T', 'U')
+        normalized_seq = self.__sequence.upper().replace("T", "U")
         return SecStruct(normalized_seq, self.__structure)
 
     # Comparison operations #######################################################
@@ -927,12 +939,9 @@ class SecStruct:
         """
         if not isinstance(other, SecStruct):
             return False
-        return (
-            self.__sequence == other.__sequence
-            and self.__structure == other.__structure
-        )
+        return self.__sequence == other.__sequence and self.__structure == other.__structure
 
-    def structural_similarity(self, other: 'SecStruct') -> float:
+    def structural_similarity(self, other: "SecStruct") -> float:
         """Calculate structural similarity score.
 
         Compares the structure strings and returns the fraction of positions
@@ -949,12 +958,10 @@ class SecStruct:
         if len(self.__structure) == 0:
             return 1.0
 
-        matches = sum(
-            1 for s1, s2 in zip(self.__structure, other.__structure) if s1 == s2
-        )
+        matches = sum(1 for s1, s2 in zip(self.__structure, other.__structure) if s1 == s2)
         return matches / len(self.__structure)
 
-    def sequence_identity(self, other: 'SecStruct') -> float:
+    def sequence_identity(self, other: "SecStruct") -> float:
         """Calculate sequence identity.
 
         Compares the sequences and returns the fraction of positions
@@ -971,7 +978,83 @@ class SecStruct:
         if len(self.__sequence) == 0:
             return 1.0
 
-        matches = sum(
-            1 for s1, s2 in zip(self.__sequence, other.__sequence) if s1 == s2
-        )
+        matches = sum(1 for s1, s2 in zip(self.__sequence, other.__sequence) if s1 == s2)
         return matches / len(self.__sequence)
+
+    # JSON serialization methods #################################################
+
+    def to_json(self, indent: Optional[int] = None, **kwargs) -> str:
+        """Serialize SecStruct to JSON string.
+
+        Args:
+            indent: JSON indentation (None for compact).
+            **kwargs: Additional arguments for json.dumps.
+
+        Returns:
+            str: JSON string representation.
+        """
+        import json
+
+        return json.dumps(self.to_dict(), indent=indent, **kwargs)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "SecStruct":
+        """Create SecStruct from dictionary.
+
+        Args:
+            data: Dictionary representation with 'sequence' and 'structure' keys.
+
+        Returns:
+            SecStruct: New SecStruct instance.
+                Note: Motifs will be automatically parsed when accessed (lazy loading).
+        """
+        if "sequence" not in data or "structure" not in data:
+            raise ValueError(
+                "Dictionary must contain 'sequence' and 'structure' keys. "
+                f"Got keys: {list(data.keys())}"
+            )
+        return cls(data["sequence"], data["structure"])
+
+    @classmethod
+    def from_json(cls, json_str: str) -> "SecStruct":
+        """Deserialize SecStruct from JSON string.
+
+        Args:
+            json_str: JSON string representation.
+
+        Returns:
+            SecStruct: New SecStruct instance.
+        """
+        import json
+
+        data = json.loads(json_str)
+        return cls.from_dict(data)
+
+    def to_json_file(self, filepath: str, indent: Optional[int] = None, **kwargs) -> None:
+        """Save SecStruct to JSON file.
+
+        Args:
+            filepath: Path to output file.
+            indent: JSON indentation (None for compact).
+            **kwargs: Additional arguments for json.dumps.
+        """
+        import json
+
+        with open(filepath, "w") as f:
+            json.dump(self.to_dict(), f, indent=indent, **kwargs)
+
+    @classmethod
+    def from_json_file(cls, filepath: str) -> "SecStruct":
+        """Load SecStruct from JSON file.
+
+        Args:
+            filepath: Path to input file.
+
+        Returns:
+            SecStruct: New SecStruct instance loaded from file.
+        """
+        import json
+
+        with open(filepath, "r") as f:
+            data = json.load(f)
+        return cls.from_dict(data)

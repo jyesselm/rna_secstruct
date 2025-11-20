@@ -262,3 +262,25 @@ class Motif:
     @structure.setter
     def structure(self, value):
         self.__structure = value
+
+    # JSON serialization #########################################################
+
+    def to_dict(self) -> dict:
+        """Convert Motif to dictionary (JSON-serializable).
+
+        Returns:
+            dict: Dictionary with all motif properties.
+                Note: parent is not included to avoid circular references.
+        """
+        return {
+            "m_id": self.__m_id,
+            "m_type": self.__m_type,
+            "sequence": self.__sequence,
+            "structure": self.__structure,
+            "strands": self.__strands,
+            "start_pos": self.__start_pos,
+            "end_pos": self.__end_pos,
+            "positions": self.__positions,
+            "token": self.__token,
+            "children": [c.to_dict() for c in self.__children],
+        }

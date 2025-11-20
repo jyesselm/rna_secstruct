@@ -345,7 +345,11 @@ def test_insert():
     # Insert in middle
     result2 = struct.insert(3, other)
     assert result2.sequence == "GGGXXXAAACCC"
-    assert result2.structure == "(((...)))"  # Structure: "(((" + "..." + "...)))" = "(((...)))" (12 chars)
+    # Structure: "(((" (0-2) + "..." (insert) + "...)))" (3-8) = "(((...)))" (12 chars)
+    # Actual result: 3 opening brackets + 6 dots (3 from insert + 3 from original) + 3 closing = 12 chars
+    expected_structure = "(((" + "..." + "...)))"  # Explicitly construct expected
+    assert result2.structure == expected_structure
+    assert len(result2.structure) == 12
     
     # Insert at end
     result3 = struct.insert(9, other)
@@ -675,3 +679,64 @@ def test_comparison_operations():
     
     identity_short = struct1.sequence_identity(struct4)
     assert identity_short == 0.0
+
+
+def test_json_serialization():
+    """Test JSON serialization methods."""
+    import json
+    import tempfile
+    import os
+    
+    struct = SecStruct("GGGAAACCC", "(((...)))")
+    
+    # Test to_dict
+    d = struct.to_dict()
+    assert isinstance(d, dict)
+    assert "sequence" in d
+    assert "structure" in d
+    assert d["sequence"] == "GGGAAACCC"
+    assert d["structure"] == "(((...)))"
+    
+    # Test to_json
+    json_str = struct.to_json()
+    assert isinstance(json_str, str)
+    assert "GGGAAACCC" in json_str
+    
+    # Test to_json with indent
+    json_str_indented = struct.to_json(indent=2)
+    assert "\n" in json_str_indented  # Should have newlines with indent
+    
+    # Test from_json
+    struct2 = SecStruct.from_json(json_str)
+    assert struct2.sequence == struct.sequence
+    assert struct2.structure == struct.structure
+    
+    # Test round-trip
+    json_str2 = struct2.to_json()
+    struct3 = SecStruct.from_json(json_str2)
+    assert struct3 == struct
+    
+    # Test with motifs
+    _ = struct.motifs  # Trigger parsing
+    d_with_motifs = struct.to_dict()
+    assert "motifs" in d_with_motifs
+    assert isinstance(d_with_motifs["motifs"], list)
+    
+    # Test to_json_file and from_json_file
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as f:
+        temp_file = f.name
+    
+    try:
+        struct.to_json_file(temp_file, indent=2)
+        assert os.path.exists(temp_file)
+        
+        struct4 = SecStruct.from_json_file(temp_file)
+        assert struct4.sequence == struct.sequence
+        assert struct4.structure == struct.structure
+    finally:
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+    
+    # Test from_dict with invalid data
+    with pytest.raises(ValueError, match="must contain 'sequence' and 'structure' keys"):
+        SecStruct.from_dict({"invalid": "data"})

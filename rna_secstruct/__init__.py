@@ -8,3 +8,15 @@ from .connectivity import (
     ConnectivityList,
     STANDARD_BRACKET_TYPES,
 )
+
+# Auto-register pandas extensions if pandas is available
+try:
+    from . import pandas_extensions  # noqa: F401
+except ImportError:
+    pass  # pandas not available
+
+# Auto-register parallel module
+try:
+    from . import parallel  # noqa: F401
+except ImportError:
+    pass  # parallel dependencies not available
