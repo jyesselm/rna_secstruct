@@ -60,10 +60,30 @@ from rna_secstruct.connectivity import (
     connectivity_list,
     ConnectivityList,
     is_circular,
+    STANDARD_BRACKET_TYPES,
 )
 
 # Re-export for backward compatibility (deprecated - use connectivity module directly)
 __all__ = ["Parser", "is_valid_dot_bracket_str", "connectivity_list", "ConnectivityList", "is_circular"]
+
+
+def _detect_bracket_types(structure: str) -> List[Tuple[str, str]]:
+    """Detect which bracket types are present in the structure.
+    
+    Args:
+        structure: Structure string to analyze.
+        
+    Returns:
+        List of (open, close) bracket pairs found in structure.
+        Defaults to [('(', ')')] if no brackets detected.
+    """
+    detected = []
+    for open_b, close_b in STANDARD_BRACKET_TYPES:
+        if open_b in structure or close_b in structure:
+            detected.append((open_b, close_b))
+    
+    # Default to standard parentheses if no brackets detected
+    return detected if detected else [("(", ")")]
 
 
 class Parser:
@@ -85,8 +105,16 @@ class Parser:
         """
         self.motif_id = 0
         self.__check_to_see_if_inputs_valid(sequence, structure)
-        # Use connectivity_list with default bracket types for backward compatibility
-        connections = connectivity_list(structure, bracket_types=None)
+        # Detect bracket types and pass to connectivity_list
+        # For single bracket type (standard parentheses), pass None for backward compatibility
+        # For multiple bracket types, pass the list
+        bracket_types = _detect_bracket_types(structure)
+        if len(bracket_types) == 1 and bracket_types[0] == ("(", ")"):
+            # Default behavior for backward compatibility
+            connections = connectivity_list(structure, bracket_types=None)
+        else:
+            # Multiple bracket types or non-standard brackets
+            connections = connectivity_list(structure, bracket_types=bracket_types)
         return self.__get_motifs(sequence, structure, connections, 0)
 
     def __check_to_see_if_inputs_valid(self, sequence: str, structure: str) -> None:
@@ -114,9 +142,24 @@ class Parser:
             )
         if not re.match(r"^[ACGUTN&]+$", sequence):
             log.warning(f"sequence contains invalid characters: {sequence}")
-        if not re.match(r"^[().&]+$", structure):
-            raise ValueError(f"structure contains invalid characters: {structure}")
-        is_valid_dot_bracket_str(structure)
+        
+        # Allow standard bracket types: (), [], {}, <>
+        allowed_chars = set(".& ")
+        for open_b, close_b in STANDARD_BRACKET_TYPES:
+            allowed_chars.add(open_b)
+            allowed_chars.add(close_b)
+        
+        # Check if structure contains only allowed characters
+        invalid_chars = [c for c in structure if c not in allowed_chars]
+        if invalid_chars:
+            raise ValueError(
+                f"structure contains invalid characters: {structure}. "
+                f"Invalid characters found: {set(invalid_chars)}. "
+                f"Allowed characters: {sorted(allowed_chars)}"
+            )
+        
+        # Note: Bracket balance validation is done in parse() method via connectivity_list()
+        # This avoids calling connectivity_list() twice (once here, once in parse())
 
     def __get_motifs(
         self, sequence: str, structure: str, connections: List[int], start: int
@@ -195,6 +238,9 @@ class Parser:
             A helix or junction motif.
         """
         helix_len = self.__get_helix_length(connections, start)
+        if helix_len == 0:
+            # This should not happen if structure is valid, but handle gracefully
+            raise ValueError(f"No valid helix found starting at position {start}. Structure may be invalid.")
         lhs, rhs = [], []
         for index in range(start, start + helix_len):
             lhs.append(index)
@@ -206,17 +252,25 @@ class Parser:
             "HELIX", [lhs, rhs], f"{seq1}&{seq2}", f"{ss1}&{ss2}", self.motif_id
         )
         self.motif_id += 1
-        if connections[start + helix_len - 1] > start:
-            helix.add_child(
-                self.__get_junction_or_hairpin(
-                    sequence, structure, connections, start + helix_len - 1
-                )
-            )
+        # Check if there's a junction/hairpin inside the helix
+        # The junction/hairpin starts at the last position of the helix (the inner base pair)
+        if helix_len > 0 and start + helix_len - 1 < len(connections):
+            if connections[start + helix_len - 1] > start:
+                junction_start = start + helix_len - 1
+                # Add bounds check to ensure junction_start is valid
+                if junction_start < len(connections):
+                    helix.add_child(
+                        self.__get_junction_or_hairpin(
+                            sequence, structure, connections, junction_start
+                        )
+                    )
 
-        if not is_circular(rhs[-1], connections):
-            motif = self.__get_motifs(sequence, structure, connections, rhs[-1] + 1)
-            if motif is not None:
-                helix.add_child(motif)
+        if len(rhs) > 0 and not is_circular(rhs[-1], connections):
+            next_start = rhs[-1] + 1
+            if next_start < len(connections) and next_start > start:
+                motif = self.__get_motifs(sequence, structure, connections, next_start)
+                if motif is not None:
+                    helix.add_child(motif)
         return helix
 
     def __get_junction_or_hairpin(
@@ -234,19 +288,39 @@ class Parser:
         Returns:
             A junction or hairpin motif.
         """
+        if start < 0 or start >= len(structure):
+            raise ValueError(f"start position {start} is out of bounds")
         strands = []
         pos = start
         # pos should be the first opening pair of a junction or hairpin
-        if structure[pos] != "(":
-            raise ValueError(f"expected ( at position {pos}")
+        # Support any opening bracket from STANDARD_BRACKET_TYPES
+        opening_brackets = {open_b for open_b, _ in STANDARD_BRACKET_TYPES}
+        if structure[pos] not in opening_brackets:
+            raise ValueError(
+                f"expected opening bracket at position {pos}, got '{structure[pos]}'. "
+                f"Valid opening brackets: {sorted(opening_brackets)}"
+            )
+        iterations = 0
+        max_iterations = len(connections)  # Prevent infinite loops
         while True:
+            if iterations >= max_iterations:
+                raise ValueError(f"infinite loop detected in junction/hairpin parsing at position {start}")
+            iterations += 1
+            if pos < 0 or pos >= len(connections):
+                raise ValueError(f"position {pos} is out of bounds")
             next_strand = [pos]
             pos += 1
-            while connections[pos] == -1:
+            if pos >= len(connections):
+                raise ValueError(f"position {pos} is out of bounds")
+            while pos < len(connections) and connections[pos] == -1:
                 next_strand.append(pos)
                 pos += 1
+            if pos >= len(connections):
+                raise ValueError(f"position {pos} is out of bounds")
             next_strand.append(pos)
             strands.append(next_strand)
+            if connections[pos] < 0 or connections[pos] >= len(connections):
+                raise ValueError(f"connection at position {pos} is invalid: {connections[pos]}")
             pos = connections[pos]
             # made a complete circle
             if pos == start:
@@ -262,9 +336,11 @@ class Parser:
             ss = "&".join([ss for seq, ss in seq_and_ss])
             m = Motif("JUNCTION", strands, seq, ss, self.motif_id - 1)
             for strand in strands[:-1]:
-                m.add_child(
-                    self.__get_motifs(sequence, structure, connections, strand[-1])
-                )
+                next_pos = strand[-1] + 1
+                if next_pos < len(connections) and next_pos > start:
+                    child = self.__get_motifs(sequence, structure, connections, next_pos)
+                    if child is not None:
+                        m.add_child(child)
             return m
         else:
             seq, ss = self.__get_seq_and_ss_from_strand(sequence, structure, strands[0])
@@ -281,10 +357,17 @@ class Parser:
         Returns:
             The length of the helix.
         """
+        if start >= len(connections) or start < 0:
+            return 0
         complement = connections[start]
+        if complement < 0 or complement >= len(connections):
+            return 0
         length = 0
+        max_len = len(connections)
         while (
-            connections[start + length] == complement - length
+            start + length < max_len
+            and complement - length >= 0
+            and connections[start + length] == complement - length
             and connections[complement - length] == start + length
         ):
             length += 1

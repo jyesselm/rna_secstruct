@@ -52,12 +52,17 @@ dev = [
 pandas = [
     "pandas>=1.0.0",
 ]
+jupyter = [
+    "jupyter>=1.0.0",
+    "notebook>=6.0.0",
+    "ipykernel>=6.0.0",
+]
 parallel = [
     "tqdm>=4.0.0",
     "joblib>=1.0.0",
 ]
 all = [
-    "rna_secstruct[pandas,parallel,dev]",
+    "rna_secstruct[pandas,parallel,dev,jupyter]",
 ]
 
 [project.urls]
@@ -159,10 +164,11 @@ addopts = [
     "--verbose",
     "--tb=short",
     "-ra",  # Show extra test summary info
+    "-m", "not integration",  # Exclude integration tests by default
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "integration: marks tests as integration tests",
+    "integration: marks tests as integration tests (excluded by default, run with '-m integration')",
     "unit: marks tests as unit tests",
 ]
 

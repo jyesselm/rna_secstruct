@@ -74,7 +74,11 @@ class Motif:
         if self.__m_type == "SINGLESTRAND":
             result = value
             for c in self.__children:
-                result += c.__recursive_build(btype)
+                child_result = c.__recursive_build(btype)
+                # Remove & from child result since SINGLESTRAND builds continuous sequence
+                if "&" in child_result:
+                    child_result = child_result.replace("&", "")
+                result += child_result
         elif self.__m_type == "HAIRPIN":
             if self.__parent is not None:
                 result = value[1:-1]
@@ -84,18 +88,102 @@ class Motif:
             result = value
             if len(self.__children) > 0:
                 result = value.split("&")
-                result = (
-                    result[0] + self.__children[0].__recursive_build(btype) + result[1]
-                )
+                child_result = self.__children[0].__recursive_build(btype)
+                # For structures, if child is a HAIRPIN or HELIX, it may have removed parentheses
+                # We need to add them back since HELIX represents a base pair
+                if btype == "STRUCTURE" and self.__children[0].__m_type in ["HAIRPIN", "HELIX"]:
+                    # Check if child_result needs parentheses added
+                    if not (child_result.startswith("(") and child_result.endswith(")")):
+                        child_result = "(" + child_result + ")"
+                # For HELIX structure, we need to use all but the last char of first chunk
+                # and all but the first char of last chunk
+                # This gives us the correct number of opening/closing parentheses
+                if btype == "STRUCTURE":
+                    opening = result[0][:-1] if len(result[0]) > 1 else (result[0] if len(result[0]) > 0 else "")
+                    closing = result[1][1:] if len(result[1]) > 1 else (result[1] if len(result[1]) > 0 else "")
+                    result = opening + child_result + closing
+                else:
+                    # For sequences with a child (especially HAIRPIN), the child already includes
+                    # the connecting bases at its ends. We need to include the full first and last chunks
+                    # from the helix to get the complete sequence, but the child has already removed
+                    # its connecting bases. So we need to add them back from the helix chunks.
+                    # The connecting base from the first chunk is the last char, and from the last chunk is the first char.
+                    if self.__children[0].__m_type == "HAIRPIN":
+                        # Child is HAIRPIN: it removed connecting bases, so we include them from helix chunks
+                        # Use full first chunk (includes connecting base) and full last chunk (includes connecting base)
+                        opening = result[0] if len(result[0]) > 0 else ""
+                        closing = result[1] if len(result[1]) > 0 else ""
+                        result = opening + child_result + closing
+                    else:
+                        # For other child types (JUNCTION, HELIX), the child includes the connecting bases
+                        # in its recursive_sequence, so we should NOT include them from the helix chunks
+                        # Use the original logic: remove connecting bases from helix chunks
+                        opening = result[0][:-1] if len(result[0]) > 1 else (result[0] if len(result[0]) > 0 else "")
+                        closing = result[1][1:] if len(result[1]) > 1 else (result[1] if len(result[1]) > 0 else "")
+                        result = opening + child_result + closing
             if len(self.__children) > 1:
-                result += self.__children[1].__recursive_build(btype)
+                child_result = self.__children[1].__recursive_build(btype)
+                # Same logic for second child
+                if btype == "STRUCTURE" and self.__children[1].__m_type in ["HAIRPIN", "HELIX"]:
+                    if not (child_result.startswith("(") and child_result.endswith(")")):
+                        child_result = "(" + child_result + ")"
+                result += child_result
         elif self.__m_type == "JUNCTION":
+            # For a junction, we need to properly build from strands and children
+            # Junction has n strands and n-1 children (one for each loop)
+            # For structures, the logic is different from sequences
+            chunks = value.split("&")
             result = ""
-            chunks = [subseq[1:-1] for subseq in value.split("&")]
-            for chunk, child in zip(chunks, self.__children):
-                result += chunk
-                result += child.__recursive_build(btype)
-            result += chunks[-1]
+            if len(chunks) == 0:
+                return result
+            if btype == "STRUCTURE":
+                # For structures, we need to handle parentheses correctly
+                # Junction structure format: (.(&).) means:
+                # - First chunk: (.(  (opening paren, loop chars, base pair)
+                # - Last chunk: ).)  (base pair, loop chars, closing paren)
+                # We need to extract: opening, middle parts, child structures, closing
+                if len(chunks[0]) > 0:
+                    result += chunks[0][0]  # Opening parenthesis
+                    # Add middle part of first chunk (everything except first and last char)
+                    if len(chunks[0]) > 1:
+                        result += chunks[0][1:-1]  # Middle part
+                # For each child, add its recursive structure
+                for i, child in enumerate(self.__children):
+                    child_result = child.__recursive_build(btype)
+                    result += child_result
+                    # Add the middle part from the next chunk (if not last)
+                    if i < len(self.__children) - 1 and i + 1 < len(chunks):
+                        if len(chunks[i + 1]) > 1:
+                            result += chunks[i + 1][1:-1]  # Middle part (skip first and last)
+                # Add middle part of last chunk (everything except first and last char)
+                if len(chunks) > 0 and len(chunks[-1]) > 1:
+                    result += chunks[-1][1:-1]  # Middle part
+                # Add closing from last chunk (last char)
+                if len(chunks) > 0 and len(chunks[-1]) > 0:
+                    result += chunks[-1][-1]  # Closing parenthesis
+            else:
+                # For sequences, we need to build from the full chunks
+                # Start with the full first chunk
+                if len(chunks[0]) > 0:
+                    result += chunks[0]
+                # For each child, add its full recursive sequence
+                for i, child in enumerate(self.__children):
+                    child_result = child.__recursive_build(btype)
+                    result += child_result
+                    # Add the next chunk, but skip the first base (it's the connecting base from previous strand)
+                    if i < len(self.__children) - 1 and i + 1 < len(chunks):
+                        if len(chunks[i + 1]) > 1:
+                            result += chunks[i + 1][1:]  # Skip first base
+                        else:
+                            result += chunks[i + 1]
+                # Add the last chunk (full, not skipping first base)
+                # The connecting base is already handled by the child
+                if len(self.__children) == 0 and len(chunks) > 1:
+                    result += chunks[-1]
+                elif len(self.__children) > 0:
+                    # For the last chunk, we need to add it after the last child
+                    if len(chunks) > len(self.__children):
+                        result += chunks[-1]
         return result
 
     def recursive_sequence(self):

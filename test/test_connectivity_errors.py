@@ -171,7 +171,11 @@ class TestErrorMessageClarity:
         except ValueError as e:
             error_msg = str(e)
             # Error should suggest checking/fixing
-            assert "check" in error_msg.lower() or "fix" in error_msg.lower() or "balanced" in error_msg.lower()
+            assert (
+                "check" in error_msg.lower()
+                or "fix" in error_msg.lower()
+                or "balanced" in error_msg.lower()
+            )
 
     def test_length_mismatch_shows_both_lengths(self):
         """Test that length mismatch error shows both lengths."""
@@ -182,4 +186,3 @@ class TestErrorMessageClarity:
             assert "9" in error_msg  # Sequence length
             assert "8" in error_msg  # Structure length
             assert "length" in error_msg.lower()
-
