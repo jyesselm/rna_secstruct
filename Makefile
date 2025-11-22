@@ -67,9 +67,13 @@ build: clean
 
 publish: check-all build
 	@echo "Publishing to PyPI..."
+	@echo "Note: This package uses a Non-Commercial License"
+	@echo "Make sure you have configured PyPI credentials (e.g., ~/.pypirc or TWINE_* environment variables)"
 	python -m twine upload dist/*
 
 publish-test: check-all build
 	@echo "Publishing to Test PyPI..."
+	@echo "Note: This package uses a Non-Commercial License"
+	@echo "Make sure you have configured Test PyPI credentials"
 	python -m twine upload --repository testpypi dist/*
 

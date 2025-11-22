@@ -29,9 +29,7 @@ def _parse_single(sequence: str, structure: str) -> SecStruct:
     return SecStruct(sequence, structure)
 
 
-def _get_connectivity_single(
-    sequence: str, structure: str, format: Optional[str] = None
-) -> Any:
+def _get_connectivity_single(sequence: str, structure: str, format: Optional[str] = None) -> Any:
     """Get connectivity list for a single structure (helper for parallel processing).
 
     Args:
@@ -50,7 +48,7 @@ def batch_parse(
     structures: List[str],
     n_jobs: Optional[int] = None,
     backend: str = "multiprocessing",
-    **kwargs
+    **kwargs,
 ) -> List[SecStruct]:
     """Parse multiple structures in parallel.
 
@@ -109,7 +107,7 @@ def batch_connectivity(
     format: Optional[str] = None,
     n_jobs: Optional[int] = None,
     backend: str = "multiprocessing",
-    **kwargs
+    **kwargs,
 ) -> List[Any]:
     """Generate connectivity lists for multiple structures in parallel.
 
@@ -149,9 +147,7 @@ def batch_connectivity(
         with ThreadPoolExecutor(max_workers=n_jobs) as executor:
             return list(
                 executor.map(
-                    lambda args: get_connectivity_list(
-                        args[0], args[1], format=format, **kwargs
-                    ),
+                    lambda args: get_connectivity_list(args[0], args[1], format=format, **kwargs),
                     zip(sequences, structures),
                 )
             )
@@ -159,9 +155,7 @@ def batch_connectivity(
         # Multiprocessing backend
         with mp.Pool(processes=n_jobs) as pool:
             return pool.starmap(
-                lambda seq, struct: get_connectivity_list(
-                    seq, struct, format=format, **kwargs
-                ),
+                lambda seq, struct: get_connectivity_list(seq, struct, format=format, **kwargs),
                 zip(sequences, structures),
             )
     else:
@@ -208,4 +202,3 @@ def batch_apply(
         raise ValueError(
             f"Unknown backend: {backend}. Must be 'multiprocessing', 'threading', or 'sequential'."
         )
-

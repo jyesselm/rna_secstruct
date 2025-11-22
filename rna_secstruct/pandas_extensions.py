@@ -64,9 +64,7 @@ if PANDAS_AVAILABLE:
             """
             self._obj = pandas_obj
 
-        def from_sequence_structure(
-            self, seq_col: str, struct_col: str
-        ) -> "pd.Series":
+        def from_sequence_structure(self, seq_col: str, struct_col: str) -> "pd.Series":
             """Create SecStruct objects from sequence and structure columns.
 
             Args:
@@ -76,9 +74,7 @@ if PANDAS_AVAILABLE:
             Returns:
                 pandas.Series: Series of SecStruct objects.
             """
-            return self._obj.apply(
-                lambda row: SecStruct(row[seq_col], row[struct_col]), axis=1
-            )
+            return self._obj.apply(lambda row: SecStruct(row[seq_col], row[struct_col]), axis=1)
 
         def add_secstruct(
             self, seq_col: str, struct_col: str, column: str = "secstruct"
@@ -107,9 +103,7 @@ if PANDAS_AVAILABLE:
                 pd.DataFrame: DataFrame with added statistics columns.
             """
             df = self._obj.copy()
-            df[f"{secstruct_col}_num_bp"] = df[secstruct_col].apply(
-                lambda s: s.get_num_basepairs()
-            )
+            df[f"{secstruct_col}_num_bp"] = df[secstruct_col].apply(lambda s: s.get_num_basepairs())
             df[f"{secstruct_col}_num_unpaired"] = df[secstruct_col].apply(
                 lambda s: s.get_num_unpaired()
             )
@@ -207,10 +201,8 @@ if PANDAS_AVAILABLE:
             """
             return self._obj.apply(
                 lambda s: (
-                    hasattr(s, "connectivity")
-                    and len([c for c in s.connectivity if c != -1]) > 0
+                    (hasattr(s, "connectivity") and len([c for c in s.connectivity if c != -1]) > 0)
+                    if isinstance(s, SecStruct)
+                    else None
                 )
-                if isinstance(s, SecStruct)
-                else None
             )
-

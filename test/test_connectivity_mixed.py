@@ -15,16 +15,16 @@ class TestMixedFormats:
         structure = "(((aaa(((...)))aaa)))"
         seq = "GGGAAACCCUUUAAAGGGCCC"  # 21 nucleotides to match structure
         cl = get_connectivity_list(seq, structure)
-        
+
         # Should detect as mixed format
         assert _detect_structure_format(structure) == "mixed"
-        
+
         # Check bracket pairs
         assert cl.get_pair_type(0) == "("  # Opening bracket
         assert cl.get_pair_type(20) == ")"  # Closing bracket
         assert cl.get_pair_type(6) == "("  # Inner opening bracket
         assert cl.get_pair_type(14) == ")"  # Inner closing bracket
-        
+
         # Check letter pairs
         assert cl.get_pair_type(3) == "a"  # First 'a'
         assert cl.get_pair_type(17) == "a"  # Paired 'a'
@@ -32,7 +32,7 @@ class TestMixedFormats:
         assert cl.get_pair_type(16) == "a"  # Paired 'a'
         assert cl.get_pair_type(5) == "a"  # Third 'a'
         assert cl.get_pair_type(15) == "a"  # Paired 'a'
-        
+
         # Verify connections
         assert cl.connections[3] == 17  # 'a' at 3 pairs with 'a' at 17
         assert cl.connections[4] == 16  # 'a' at 4 pairs with 'a' at 16
@@ -43,14 +43,14 @@ class TestMixedFormats:
         structure = "aaa(((...)))aaa"
         seq = "GGGAAACCCUUUAAA"  # 15 nucleotides to match structure
         cl = get_connectivity_list(seq, structure)
-        
+
         # Should detect as mixed format
         assert _detect_structure_format(structure) == "mixed"
-        
+
         # Check bracket pairs
         assert cl.get_pair_type(3) == "("  # Opening bracket
         assert cl.get_pair_type(9) == ")"  # Closing bracket
-        
+
         # Check letter pairs
         assert cl.get_pair_type(0) == "a"
         assert cl.get_pair_type(12) == "a"
@@ -64,14 +64,14 @@ class TestMixedFormats:
         structure = "(((111(((...)))111)))"
         seq = "GGGAAACCCUUUAAAGGGCCC"  # 21 nucleotides to match structure
         cl = get_connectivity_list(seq, structure)
-        
+
         # Should detect as mixed format
         assert _detect_structure_format(structure) == "mixed"
-        
+
         # Check bracket pairs exist
         assert cl.get_pair_type(0) == "("
         assert cl.get_pair_type(20) == ")"
-        
+
         # Check number pairs
         # Numbers are at positions where digits start
         # '1' at position 3, 4, 5 should pair with '1' at 15, 16, 17
@@ -84,11 +84,10 @@ class TestMixedFormats:
         structure = "((x...))"
         seq = "GGGAAACC"  # 8 nucleotides to match structure
         cl = get_connectivity_list(seq, structure, format="bracket")
-        
+
         # 'x' should be ignored (not treated as a letter to pair)
         assert cl.get_pair_type(2) is None  # 'x' is unpaired
         assert cl.connections[2] == -1  # 'x' is unpaired
         # Brackets should still work
         assert cl.get_pair_type(0) == "("
         assert cl.get_pair_type(7) == ")"
-

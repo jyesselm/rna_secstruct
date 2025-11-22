@@ -58,4 +58,3 @@ def loads(json_str: str, **kwargs) -> Any:
         Parsed JSON object.
     """
     return json.loads(json_str, **kwargs)
-

@@ -115,4 +115,3 @@ class TestPandasExtensions:
         structs2 = structs.rna.from_json(json_str)
         assert len(structs2) == 2
         assert all(isinstance(s, SecStruct) for s in structs2)
-

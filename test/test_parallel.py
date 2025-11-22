@@ -32,9 +32,7 @@ class TestParallelProcessing:
         """Test batch connectivity with sequential backend."""
         sequences = ["GGGAAACCC", "AAAGGGCCC"]
         structures = ["(((...)))", "(((...)))"]
-        result = batch_connectivity(
-            sequences, structures, n_jobs=1, backend="sequential"
-        )
+        result = batch_connectivity(sequences, structures, n_jobs=1, backend="sequential")
         assert len(result) == 2
         assert all(hasattr(r, "connections") or isinstance(r, list) for r in result)
 
@@ -70,4 +68,3 @@ class TestParallelProcessing:
         structures = ["(((...)))", "(((...)))"]
         result = batch_parse(sequences, structures, n_jobs=None, backend="sequential")
         assert len(result) == 2
-

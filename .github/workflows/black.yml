@@ -1,0 +1,33 @@
+name: Black Formatting Check
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install Black
+      run: |
+        python -m pip install --upgrade pip
+        pip install black
+    
+    - name: Check code formatting with Black
+      run: |
+        black --check rna_secstruct/ test/
+    
+    - name: Show diff if formatting fails
+      if: failure()
+      run: |
+        black --diff rna_secstruct/ test/ || true
+
