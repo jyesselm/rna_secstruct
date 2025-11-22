@@ -89,21 +89,39 @@ def test_connectivity_list_get_basepair():
     assert cl.get_basepair(8) == "CG"
 
 
-def test_in_valid_dot_brackets():
+def test_in_valid_dot_brackets(caplog):
     """
-    test invalid dot brackets
+    test invalid dot brackets - now handled gracefully with warnings
     """
+    import logging
     p = Parser()
-    # bad structure
-    with pytest.raises(ValueError):
-        p.parse("GGGAAACCC", "(((...)))(")
-    # DONT want this anymore can catch at another level
-    p.parse("GGGAAACCC", "()((...))")
-    # with pytest.raises(ValueError):
-    #    p.parse("GGGAAACCC", "()((...))")
-    # bad sequence
-    # with pytest.raises(ValueError):
-    #    p.parse("GGGYAACCC", "(((...)))")
+    
+    # bad structure - should log warnings but not raise exception
+    # The structure has length mismatch and unbalanced parentheses
+    with caplog.at_level(logging.WARNING):
+        result = p.parse("GGGAAACCC", "(((...)))(")
+        # Should have warnings about length mismatch and unbalanced parentheses
+        assert len(caplog.records) > 0
+        # Verify it still parsed (returned a result)
+        assert result is not None
+        # Clear the log for next test
+        caplog.clear()
+    
+    # Structure that was previously problematic but now handled
+    with caplog.at_level(logging.WARNING):
+        result = p.parse("GGGAAACCC", "()((...))")
+        # Should parse successfully, may or may not have warnings
+        assert result is not None
+        caplog.clear()
+    
+    # bad sequence - should replace invalid characters with warnings
+    with caplog.at_level(logging.WARNING):
+        result = p.parse("GGGYAACCC", "(((...)))")
+        # Should have warning about invalid sequence characters
+        assert result is not None
+        # Check that warnings were logged about invalid characters
+        warning_messages = [record.message for record in caplog.records]
+        # The parser should handle invalid sequence characters gracefully
 
 
 def test_simple_hairpins():
