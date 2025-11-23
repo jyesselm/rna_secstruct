@@ -1,199 +1,305 @@
-# rna_secstruct
+# RNA Secondary Structure
 
-[![PYPI status]( https://badge.fury.io/py/rna_secstruct.png)](http://badge.fury.io/py/rna_secstruct)[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![License: Non-Commercial](https://img.shields.io/badge/license-Non--Commercial-yellow.svg)](LICENSE)
 
-a minimal package for parsing and editing rna secondary structure
-
-## Install
-
-To install rna_secstruct 
-
-```shell
-python -m pip install git+https://github.com/jyesselm/rna_secstruct
-```
-
+A modern Python package for parsing, analyzing, and manipulating RNA secondary structures. Designed with a clean API, lazy loading for performance, and comprehensive motif analysis capabilities.
 
 ## Features
 
-```python
-# load the module, all we need is SecStruct and MotifSearchParams
-from rna_secstruct import SecStruct, MotifSearchParams
+✨ **Modern & Easy to Use** - Clean, intuitive API inspired by best practices  
+🚀 **Performance Optimized** - Lazy loading for fast parsing of large structures  
+🧬 **Comprehensive Analysis** - Extract, search, and manipulate structural motifs  
+🔧 **Flexible Parsing** - Supports multiple bracket types, pseudoknots, and alternative formats  
+📊 **Pandas Integration** - Seamless integration with pandas DataFrames  
+⚡ **Parallel Processing** - Batch processing support for large datasets  
+🛡️ **Robust Error Handling** - Graceful handling of malformed structures with warnings  
+
+## Installation
+
+Install from GitHub:
+
+```bash
+python -m pip install git+https://github.com/jyesselm/rna_secstruct
 ```
 
+Install with optional dependencies:
+
+```bash
+# With pandas support
+pip install git+https://github.com/jyesselm/rna_secstruct#egg=rna_secstruct[pandas]
+
+# With parallel processing
+pip install git+https://github.com/jyesselm/rna_secstruct#egg=rna_secstruct[parallel]
+
+# With all optional dependencies
+pip install git+https://github.com/jyesselm/rna_secstruct#egg=rna_secstruct[all]
+```
+
+## Quick Start
+
 ```python
-# initiate SecStruct object with sequence and dot bracket notation
+from rna_secstruct import SecStruct
+
+# Create a structure from sequence and dot-bracket notation
 struct = SecStruct("GGGAAACCC", "(((...)))")
+
+# Access basic properties
+print(f"Sequence: {struct.sequence}")      # GGGAAACCC
+print(f"Structure: {struct.structure}")    # (((...)))
+print(f"Length: {len(struct)}")            # 9
+
+# Access motifs (lazy loading - parsing happens here)
+for motif_id, motif in struct.motifs.items():
+    print(f"{motif_id}: {motif.m_type} - {motif.sequence}")
+# 0: HELIX - GGG&CCC
+# 1: HAIRPIN - GAAAC
 ```
 
-### How to access motifs
-Motifs are stored as a dictionary with each given a specific ID. Motifs
+## Examples
+
+### Basic Usage
+
+#### Creating Structures
 
 ```python
-struct.motifs
+from rna_secstruct import SecStruct
+
+# Simple hairpin
+hairpin = SecStruct("GGGAAACCC", "(((...)))")
+
+# Multi-strand structure (use & to separate strands)
+multistrand = SecStruct(
+    "GGGAAACCC&UUUAAA", 
+    "(((...)))&(((...)))"
+)
+
+# Structure with junction
+junction = SecStruct(
+    "GGAAACGAAACGAAACC", 
+    "((...)(...)(...))"
+)
 ```
 
-{0: HELIX,GGG&CCC,(((&))), 1: HAIRPIN,GAAAC,(...)}
+#### Accessing Motifs
 
 ```python
-# can see a formatted version of all motifs with their corresponding ids
+struct = SecStruct("GGGAAACCC", "(((...)))")
+
+# Motifs are stored as a dictionary
+print(struct.motifs)
+# {0: HELIX,GGG&CCC,(((&))), 1: HAIRPIN,GAAAC,(...)}
+
+# Access by ID
+helix = struct[0]
+hairpin = struct[1]
+
+# Iterate over motifs
+for motif in struct:
+    print(f"{motif.m_type}: {motif.sequence}")
+# HELIX: GGG&CCC
+# HAIRPIN: GAAAC
+
+# Get all motifs of a specific type
+helices = struct.get_helices()
+hairpins = struct.get_hairpins()
+junctions = struct.get_junctions()
+single_strands = struct.get_single_strands()
+```
+
+### Working with Motif Objects
+
+```python
+struct = SecStruct("GGGAAACCC", "(((...)))")
+motif = struct[0]  # Get helix motif
+
+# Basic properties
+print(f"ID: {motif.m_id}")              # 0
+print(f"Type: {motif.m_type}")          # HELIX
+print(f"Sequence: {motif.sequence}")    # GGG&CCC
+print(f"Structure: {motif.structure}")  # (((&)))
+
+# Position information
+print(f"Strands: {motif.strands}")      # [[0, 1, 2], [6, 7, 8]]
+print(f"Positions: {motif.positions}")  # [0, 1, 2, 6, 7, 8]
+print(f"Start: {motif.start_pos}")      # 0
+print(f"End: {motif.end_pos}")          # 8
+
+# Hierarchy
+print(f"Has parent: {motif.has_parent()}")   # False
+print(f"Has children: {motif.has_children()}")  # True
+print(f"Children: {motif.children}")     # [HAIRPIN,GAAAC,(...)]
+
+# Type checking
+print(motif.is_helix())        # True
+print(motif.is_hairpin())      # False
+print(motif.is_junction())     # False
+print(motif.is_single_strand())  # False
+
+# Recursive operations (include all children)
+seq, struct = motif.recursive_sequence(), motif.recursive_structure()
+print(f"Recursive: {seq} {struct}")  # GGGAAACCC (((...)))
+```
+
+### Searching for Motifs
+
+```python
+from rna_secstruct import SecStruct, MotifSearchParams
+
+struct = SecStruct("GGGACCUUCGGGACCC", "(((.((....)).)))")
+
+# Search by sequence
+results = struct.get_motifs(MotifSearchParams(sequence="GAC&GAC"))
+print(results)
+# [JUNCTION,GAC&GAC,(.(&).)]
+
+# Search by structure pattern
+results = struct.get_motifs(MotifSearchParams(structure="(....)"))
+print(results)
+# [HAIRPIN,GGAAAC,(....)]
+
+# Search by motif type
+helices = struct.get_motifs(MotifSearchParams(m_type="HELIX"))
+
+# Search with position constraints (exclude 5' and 3' ends)
+results = struct.get_motifs(
+    MotifSearchParams(
+        m_type="JUNCTION",
+        min_pos=10,  # Start after position 10
+        max_pos=50   # End before position 50
+    )
+)
+
+# Search by token (motif identifier)
+helix4 = struct.get_motifs_by_token("Helix4")  # Any helix of length 4
+junction2 = struct.get_motifs_by_token("Junction2_5|0")  # 2-way junction with specific loop sizes
+```
+
+### Structure Manipulation
+
+#### Changing Motifs
+
+```python
+struct = SecStruct("GGGAAACCC", "(((...)))")
+
+# Change helix sequence
+struct.change_motif(0, "AGG&CCU", "(((&)))")
+print(struct.sequence)  # AGGAAACCU
+
+# Change hairpin to hexaloop
+struct.change_motif(1, "CUUUUUUG", "(......)")
+print(struct.sequence)  # AGCUUUUUUGCU
+
+# Replace with complex structure (auto-reparsing)
+struct = SecStruct("GGGAAACCC", "(((...)))")
+print("Before:")
 print(struct.to_str())
+
+struct.change_motif(1, "GGGACCUUCGGGACCC", "(((.((....)).)))")
+print("\nAfter:")
+print(struct.to_str())
+# ID: 0, Helix5 GGGGG&CCCCC (((((&)))))
+#    ID: 1, Junction2_1|1 GAC&GAC (.(&).)
+#       ID: 2, Helix2 CC&GG ((&))
+#          ID: 3, Hairpin4 CUUCGG (....)
 ```
 
-ID: 0, Helix3 GGG&CCC (((&)))<br>
-&nbsp;&nbsp;&nbsp;&nbsp;ID: 1, Hairpin3 GAAAC (...)
+#### Getting Substructures
 
 ```python
-# can iterate over motifs
-for m in struct:
-    print(m)
-```
+struct = SecStruct("GGGACCUUCGGGACCC", "(((.((....)).)))")
 
-HELIX,GGG&CCC,(((&)))
-HAIRPIN,GAAAC,(...)
-
-```python
-# access first motif which is id `0`
-struct[0]
-```
-
-HELIX,GGG&CCC,(((&)))
-
-### Working with motif objects
-An overview of all the properties that are stored in a motif
-
-```python
-m0 = struct[0]
-{
-    # what id is the motif
-    "m_id" : m0.m_id,
-    # the type of motif SINGLESTRAND, HELIX, HAIRPIN, JUNCTION
-    "m_type" : m0.m_type,
-    # the sequence of the motif, '&' seperates individal strands
-    "sequence" : m0.sequence,
-    # the structure in dot bracket notatio
-    "structure" : m0.structure,
-    # the position of each nucleotide in relation the full sequence/structure
-    "strands" : m0.strands,
-    # all the positions of in a single list
-    "positions" : m0.positions,
-    # the first position a motif contains
-    "start_pos" : m0.start_pos,
-    # the last position a motif contains
-    "end_pos" : m0.end_pos,
-    # the children nodes of this motif
-    "children" : m0.children
-}
-```
-
-{'m_id': 0, <br>
-'m_type': 'HELIX', <br>
-'sequence': 'GGG&CCC', <br>
-'structure': '(((&)))', <br>
-'strands': [[0, 1, 2], [6, 7, 8]], <br>
-'positions': [0, 1, 2, 6, 7, 8], <br>
-'start_pos': 0, <br>
-'end_pos': 8, <br>
-'children': [HAIRPIN,GAAAC,(...)]}
-
-#### common motif functions
-
-```python
-# is this a motif a child of another motif. Can access with m0.parent.
-m0.has_parent()
-```
-
-False
-
-```python
-# are there nodes under this one. Helices and junctions will almost always have children
-m0.has_children()
-```
-
-True
-
-```python
-m0.is_single_strand()
-```
-
-False
-
-```python
-m0.is_hairpin()
-```
-
-False
-
-```python
-m0.is_junction()
-```
-
-False
-
-```python
-m0.is_helix()
-```
-
-True
-
-```python
-# recursive functions call all children to get the full sequence and structure of this node and all
-# children
-m0.recursive_sequence(), m0.recursive_structure()
-```
-
-('GGGAAACCC', '(((...)))')
-
-### Working with Secstruct object
-
-```python
-struct = SecStruct("GGAAACGAAACGAAACC", "((...)(...)(...))")
-```
-
-```python
-# getting all helices.
-# there are similare get_single_strand(), get_junctions(), get_hairpins()
-struct.get_helices()
-```
-
-[HELIX,G&C,(&), HELIX,G&C,(&), HELIX,G&C,(&), HELIX,G&C,(&)]
-
-```python
-# getting a copy. Always a good idea if you are going to change the structure
-# see later sections on design
+# Get a copy (important before making changes)
 struct_copy = struct.get_copy()
+
+# Get substructure starting from a motif
+sub_struct = struct.get_sub_structure(1)  # From motif 1 and all its children
+print(sub_struct.sequence)   # GACCUUCGGGAC
+print(sub_struct.structure)  # (.((....)).)
 ```
 
+### Connectivity Analysis
+
 ```python
-# getting a sub structure
-struct = SecStruct("GGGACCUUCGGGACCC", "(((.((....)).)))")
-# if I want remove the bottom helix I can simply do
-sub_struct = struct.get_sub_structure(1)
-# this gets all nodes from 1 and all its children
-sub_struct
+from rna_secstruct import get_connectivity_list, ConnectivityList, STANDARD_BRACKET_TYPES
+
+# Get connectivity list (pairmap)
+struct = SecStruct("GGGAAACCC", "(((...)))")
+conn = struct.connectivity
+print(conn)  # [8, 7, 6, -1, -1, -1, 2, 1, 0]
+# Index shows paired position, -1 means unpaired
+
+# Check base pairs
+cl = ConnectivityList("GGGAAACCC", "(((...)))")
+print(cl.is_nucleotide_paired(0))    # True
+print(cl.get_paired_nucleotide(0))   # 8
+print(cl.get_basepair(0))            # GC
+
+# Support for pseudoknots with multiple bracket types
+pseudoknot = get_connectivity_list(
+    "GGGAAACCC",
+    "(([[))]]",
+    bracket_types=STANDARD_BRACKET_TYPES  # Supports () [] {} <>
+)
 ```
 
-GACCUUCGGGAC, (.((....)).)
-
-#### searching for motifs
+### Pandas Integration
 
 ```python
-# can search for motifs using get_motifs function with search parameters
-struct = SecStruct("GGGACCUUCGGGACCC", "(((.((....)).)))")
-msp = MotifSearchParams(sequence="GAC&GAC")
-struct.get_motifs(msp)
+import pandas as pd
+from rna_secstruct import SecStruct
+
+# Create a DataFrame with sequences and structures
+df = pd.DataFrame({
+    'sequence': ['GGGAAACCC', 'GGAAACGAAAC', 'GGGACCUUCGGGACCC'],
+    'structure': ['(((...)))', '((...)(...))', '(((.((....)).)))']
+})
+
+# Convert to SecStruct objects
+df['secstruct'] = df.apply(
+    lambda row: SecStruct(row['sequence'], row['structure']), 
+    axis=1
+)
+
+# Access motifs directly
+df['num_helices'] = df['secstruct'].apply(lambda s: len(s.get_helices()))
+df['num_hairpins'] = df['secstruct'].apply(lambda s: len(s.get_hairpins()))
+
+# Or use the accessor (if registered)
+df['secstruct'].secstruct.get_helices()  # Returns list of lists
 ```
 
-[JUNCTION,GAC&GAC,(.(&).)]
+### Parallel Processing
 
 ```python
-msp
+from rna_secstruct import batch_parse
+import pandas as pd
+
+# Large dataset
+sequences = ["GGGAAACCC"] * 1000
+structures = ["(((...)))"] * 1000
+
+# Process in parallel
+results = batch_parse(sequences, structures, n_jobs=4)
+
+# Or use pandas extension
+df = pd.DataFrame({
+    'sequence': sequences,
+    'structure': structures
+})
+results = df.apply(
+    lambda row: SecStruct(row['sequence'], row['structure']),
+    axis=1
+)
 ```
 
-MotifSearchParams(sequence='GAC&GAC', structure=None, m_type=None, min_pos=0, max_pos=999, min_id=0, max_id=999)
-
-You can search by sequence, structure, type of motifs, the miminal or maximum nucleotide position or the min and max id. These constraints can be useful if you wish to exclude common sequences on the 5' or 3' ends of a sequence of interest
+### Working with Real-World Data
 
 ```python
+from rna_secstruct import SecStruct, MotifSearchParams
+
+# Large RNA structure
 seq = (
     "GGAAGAUCGAGUAGAUCAAAGAGCCUAUGGCUGCCACCCGAGCCCUUGAACUACAGGGAACACUGGAAA"
     "CAGUACCCCCUGCAAGGGCGUUUGACGGUGGCAGCCUAAGGGCUCAAAGAAACAACAACAACAAC"
@@ -202,78 +308,176 @@ ss = (
     "....((((.....))))...((((((..((((((((((((((((((((.....(((((...((((....)"
     ")))...))))))))))))..)))..))))))))))...))))))...................."
 )
+
 struct = SecStruct(seq, ss)
+
+# Find all junctions after position 50
+junctions = struct.get_motifs(
+    MotifSearchParams(m_type="JUNCTION", min_pos=50)
+)
+
+# Find all 5-nucleotide hairpins
+hairpins_5 = struct.get_motifs(MotifSearchParams(structure="(....)"))
+
+# Get motif statistics
+print(f"Total motifs: {len(struct.motifs)}")
+print(f"Helices: {len(struct.get_helices())}")
+print(f"Hairpins: {len(struct.get_hairpins())}")
+print(f"Junctions: {len(struct.get_junctions())}")
 ```
+
+### Error Handling
+
+The parser handles invalid inputs gracefully with warnings:
 
 ```python
-msp = MotifSearchParams(m_type="JUNCTION", min_pos=50)
-struct.get_motifs(msp)
+import logging
+from rna_secstruct import Parser
+
+# Set up logging to see warnings
+logging.basicConfig(level=logging.WARNING)
+
+p = Parser()
+
+# These will log warnings but still parse:
+# - Invalid characters (replaced with 'N' or '.')
+# - Length mismatches (truncated/padded)
+# - Unbalanced parentheses (auto-balanced)
+# - Invalid bracket types (normalized)
+
+result = p.parse("GGGAAACCC", "(((...)))(")  # Unbalanced - will auto-fix
+result = p.parse("GGGYAACCC", "(((...)))")   # Invalid 'Y' - replaced with 'N'
+result = p.parse("GGGAAACCC", "((([...)))")  # Invalid bracket - normalized
 ```
 
-[JUNCTION,GAACA&UACCC,(...(&)...)]
+### Advanced: Multi-Strand Structures
 
 ```python
-msp = MotifSearchParams(structure="(....)")
-struct.get_motifs(msp)
+from rna_secstruct import SecStruct
 
+# Two separate RNA molecules
+struct = SecStruct(
+    "GGGAAACCC&UUUGGGAAA", 
+    "(((...)))&(((...)))"
+)
+
+# Access strands separately
+print(struct.sequence.count('&'))  # Number of strand separators
+
+# Iterate over motifs (includes all strands)
+for motif in struct:
+    print(motif.sequence)  # May contain '&' for multi-strand motifs
 ```
 
-[HAIRPIN,GGAAAC,(....)]
+### Advanced: Pseudoknot Support
 
 ```python
-# it is also possible to search using motif "tokens" which are the indentifiers generated
-# for each motif. For example "Helix4" is any helix of length 4
-struct.get_motifs_by_token("Helix4")
+from rna_secstruct import SecStruct, STANDARD_BRACKET_TYPES
 
+# Pseudoknot structure using different bracket types
+pseudoknot = SecStruct("GGGAAACCC", "(([[))]]")
+
+# The parser preserves bracket types for pseudoknot representation
+# Use connectivity module for full pseudoknot analysis
+from rna_secstruct import get_connectivity_list
+
+conn = get_connectivity_list(
+    "GGGAAACCC",
+    "(([[))]]",
+    bracket_types=STANDARD_BRACKET_TYPES  # () [] {} <>
+)
 ```
 
-[HELIX,GAUC&GAUC,((((&)))), HELIX,ACUG&CAGU,((((&))))]
+## API Overview
 
-```python
-# get a two way junction (Junction2) which has 5 unpaired nucleotides on the first
-# strand and 0 on the other
-struct.get_motifs_by_token("Junction2_5|0")
+### Main Classes
+
+- **`SecStruct`** - Main class for RNA secondary structures
+- **`Motif`** - Represents individual structural motifs
+- **`MotifSearchParams`** - Parameters for motif searching
+- **`ConnectivityList`** - Connectivity/pairmap representation
+
+### Key Methods
+
+#### SecStruct Methods
+- `get_motifs(params)` - Search for motifs with constraints
+- `get_motifs_by_token(token)` - Search by motif identifier
+- `get_helices()`, `get_hairpins()`, `get_junctions()` - Get specific motif types
+- `change_motif(id, sequence, structure)` - Modify a motif
+- `get_sub_structure(id)` - Extract substructure
+- `get_copy()` - Create a copy
+- `to_str()` - Format structure representation
+
+#### Motif Properties
+- `m_id`, `m_type`, `sequence`, `structure`
+- `strands`, `positions`, `start_pos`, `end_pos`
+- `parent`, `children`
+- `recursive_sequence()`, `recursive_structure()`
+
+## Documentation
+
+- **Jupyter Notebooks**: See `notebooks/` directory for detailed examples
+- **API Documentation**: Check docstrings in source code
+- **Examples**: All examples in this README are runnable
+
+## Development
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=rna_secstruct --cov-report=html
+
+# Run specific test file
+pytest test/test_parser.py
 ```
 
-[JUNCTION,GAACUAC&GC,(.....(&))]
+### Code Quality
 
-#### changing motifs in secstruct
+```bash
+# Format code
+black rna_secstruct/ test/
 
-```python
-# using change_motif we can change the sequence or structure of a given motif
-# here is a trival example of changing the sequence of the helix which has the id=0
-struct = SecStruct("GGGAAACCC", "(((...)))")
-struct.change_motif(0, "AGG&CCU", "(((&)))")
-struct.sequence, struct.structure
+# Lint
+ruff check rna_secstruct/ test/
+
+# Type checking
+mypy rna_secstruct/
 ```
 
-('AGGAAACCU', '(((...)))')
+## Contributing
 
-```python
-# here we can change the loop sequence from a tetraloop to a hexaloop
-struct.change_motif(1, "CUUUUUUG", "(......)")
-struct.sequence, struct.structure
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under a Non-Commercial License. See [LICENSE](LICENSE) file for details.
+
+For commercial licensing inquiries, please contact: jyesselm@unl.edu
+
+## Citation
+
+If you use `rna_secstruct` in your research, please cite:
+
+```bibtex
+@software{rna_secstruct,
+  author = {Yesselman, Joe},
+  title = {rna_secstruct: A Python package for RNA secondary structure analysis},
+  url = {https://github.com/jyesselm/rna_secstruct},
+  version = {0.1.0},
+  year = {2024}
+}
 ```
 
-('AGCUUUUUUGCU', '(((......)))')
+## Links
 
-```python
-# can also make larger changes, by replacing a motif with a segment composed
-# of many motifs, the object will reparse and create new motifs
-struct = SecStruct("GGGAAACCC", "(((...)))")
-print("original motifs:")
-print(struct.to_str())
-print("\nnew motifs")
-struct.change_motif(1, "GGGACCUUCGGGACCC", "(((.((....)).)))")
-print(struct.to_str())
-```
+- **GitHub**: https://github.com/jyesselm/rna_secstruct
+- **Issues**: https://github.com/jyesselm/rna_secstruct/issues
+- **Author**: Joe Yesselman (jyesselm@unl.edu)
 
-original motifs:
-ID: 0, Helix3 GGG&CCC (((&)))
-   ID: 1, Hairpin3 GAAAC (...)
+---
 
-new motifs
-ID: 0, Helix5 GGGGG&CCCCC (((((&)))))
-   ID: 1, Junction2_1|1 GAC&GAC (.(&).)
-      ID: 2, Helix2 CC&GG ((&))
-          ID: 3, Hairpin4 CUUCGG (....)
+**Note**: This package is designed for non-commercial use. For commercial applications, please contact the author for licensing options.

@@ -94,8 +94,9 @@ def test_in_valid_dot_brackets(caplog):
     test invalid dot brackets - now handled gracefully with warnings
     """
     import logging
+
     p = Parser()
-    
+
     # bad structure - should log warnings but not raise exception
     # The structure has length mismatch and unbalanced parentheses
     with caplog.at_level(logging.WARNING):
@@ -106,14 +107,14 @@ def test_in_valid_dot_brackets(caplog):
         assert result is not None
         # Clear the log for next test
         caplog.clear()
-    
+
     # Structure that was previously problematic but now handled
     with caplog.at_level(logging.WARNING):
         result = p.parse("GGGAAACCC", "()((...))")
         # Should parse successfully, may or may not have warnings
         assert result is not None
         caplog.clear()
-    
+
     # bad sequence - should replace invalid characters with warnings
     with caplog.at_level(logging.WARNING):
         result = p.parse("GGGYAACCC", "(((...)))")
