@@ -6,7 +6,7 @@ It includes functionalities to set up root-level logging, application-level logg
 to get logger instances with specific module names.
 
 Functions:
-    - setup_logging(file_name: str = None) -> logging.Logger
+    - setup_logging(file_name: Optional[str] = None) -> logging.Logger
         Set up the root logging configuration with optional file logging.
 
     - get_logger(module_name: str = "") -> logging.Logger
@@ -15,13 +15,14 @@ Functions:
 
 import logging
 import sys
+from typing import Optional
 
 # logging #####################################################################
 
 APP_LOGGER_NAME = "rna-secstruct"
 
 
-def setup_logging(file_name: str = None) -> logging.Logger:
+def setup_logging(file_name: Optional[str] = None) -> logging.Logger:
     """
     Set up logging configuration.
 

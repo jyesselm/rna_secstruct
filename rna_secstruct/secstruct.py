@@ -3,7 +3,7 @@ representation of secondary structure with motif
 """
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from rna_secstruct.motif import Motif
 from rna_secstruct.parser import Parser, is_valid_dot_bracket_str
@@ -70,8 +70,8 @@ class SecStruct:
         self.__sequence = sequence
         self.__structure = structure
         # Lazy loading: parse only when motifs are accessed
-        self.__root = None
-        self.__motifs = None
+        self.__root: Optional[Motif] = None
+        self.__motifs: Dict[int, Motif] = {}
         self.__parsed = False
 
     def __len__(self) -> int:
@@ -129,7 +129,7 @@ class SecStruct:
         # Existing motif access logic (returns Motif, not SecStruct)
         if item not in self.motifs:
             raise ValueError(f"no motif with id {item}")
-        return self.motifs[item]
+        return self.motifs[item]  # type: ignore[no-any-return]
 
     def __repr__(self):
         """String representation - does not trigger parsing"""
@@ -141,11 +141,15 @@ class SecStruct:
         This is called automatically when motifs are first accessed.
         """
         if not self.__parsed:
-            self.__root = Parser().parse(self.__sequence, self.__structure)
-            self.__motifs = self.__get_motifs(self.__root)
+            root = Parser().parse(self.__sequence, self.__structure)
+            self.__root = root
+            if root is not None:
+                self.__motifs = self.__get_motifs(root)
+            else:
+                self.__motifs = {}
             self.__parsed = True
 
-    def __get_motifs(self, root):
+    def __get_motifs(self, root: Optional[Motif]) -> Dict[int, Motif]:
         """Internal: Get a dictionary of motifs from root.
 
         Args:
@@ -154,8 +158,9 @@ class SecStruct:
         Returns:
             Dict[int, Motif]: Dictionary mapping motif IDs to Motif objects.
         """
-        motifs = {}
-        self.__collect_motifs(root, motifs)
+        motifs: Dict[int, Motif] = {}
+        if root is not None:
+            self.__collect_motifs(root, motifs)
         return motifs
 
     def __collect_motifs(self, cur_motif, motifs):
@@ -207,7 +212,11 @@ class SecStruct:
             raise ValueError("sequence and structure must be the same length")
         if sequence.count("&") != structure.count("&"):
             raise ValueError("sequence and structure must have the same number of strands")
-        m = self[m_id]
+        m_item = self[m_id]
+        # Type guard: ensure we have a Motif, not SecStruct
+        if not isinstance(m_item, Motif):
+            raise TypeError(f"Expected Motif, got {type(m_item).__name__}")
+        m = m_item
         # logic to change motif type only can in number of strands
         if m.num_strands() < sequence.count("&") + 1:
             raise ValueError("cannot add strands to a motif")
@@ -219,9 +228,11 @@ class SecStruct:
         strands = sequence.split("&")
         for s1, s2, c in zip(strands[:-1], strands[1:], m.children):
             self.__change_outer_flanking(c, s1[-1] + s2[0])
-        m.sequence = sequence
-        m.structure = structure
-        m.m_type = m_type
+        m.sequence = sequence  # type: ignore[misc]
+        m.structure = structure  # type: ignore[misc]
+        m.m_type = m_type  # type: ignore[misc]
+        if self.__root is None:
+            raise ValueError("Cannot update structure: root motif is None")
         full_seq = self.__root.recursive_sequence()
         full_ss = self.__root.recursive_structure()
         self.__sequence = full_seq
@@ -493,7 +504,11 @@ class SecStruct:
         Returns:
             SecStruct: A new SecStruct instance representing the substructure.
         """
-        m = self[root_id]
+        m_item = self[root_id]
+        # Type guard: ensure we have a Motif, not SecStruct
+        if not isinstance(m_item, Motif):
+            raise TypeError(f"Expected Motif, got {type(m_item).__name__}")
+        m = m_item
         seq = m.recursive_sequence()
         struct = m.recursive_structure()
         # fix dropping the first basepair in the structure
@@ -648,13 +663,13 @@ class SecStruct:
             )
         return self.remove(pos, pos + len(other.__sequence))
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert SecStruct to dictionary (JSON-serializable).
 
         Returns:
             dict: Dictionary with sequence, structure, and optional motifs.
         """
-        result = {
+        result: Dict[str, Any] = {
             "sequence": self.__sequence,
             "structure": self.__structure,
         }

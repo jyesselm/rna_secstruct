@@ -7,8 +7,8 @@ try:
     from rna_secstruct.motif import Motif
     from rna_secstruct.secstruct import SecStruct
 except ImportError:
-    SecStruct = None
-    Motif = None
+    SecStruct = None  # type: ignore[misc,assignment]
+    Motif = None  # type: ignore[misc,assignment]
 
 
 class SecStructJSONEncoder(json.JSONEncoder):

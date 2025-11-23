@@ -286,7 +286,7 @@ class Parser:
     def __init__(self):
         self.motif_id = 0
 
-    def parse(self, sequence: str, structure: str) -> None:
+    def parse(self, sequence: str, structure: str) -> Optional[Motif]:
         """
         Parse the given sequence and structure into motifs.
 
@@ -295,7 +295,7 @@ class Parser:
             structure: A dot bracket structure.
 
         Returns:
-            None
+            Optional[Motif]: The root motif, or None if parsing fails.
         """
         self.motif_id = 0
         # Normalize inputs before processing
@@ -312,7 +312,7 @@ class Parser:
                 log.warning(f"Sequence truncated to match structure length: {min_len}")
             else:
                 structure = structure[:min_len]
-                log.warning(f"Structure truncated to match sequence length: {min_len}")
+                log.warning(f"Structure truncated to match structure length: {min_len}")
         connections = connectivity_list(structure)
         return self.__get_motifs(sequence, structure, connections, 0)
 
@@ -393,7 +393,7 @@ class Parser:
 
     def __get_single_strand(
         self, sequence: str, structure: str, connections: List[int], start: int
-    ) -> Motif:
+    ) -> Optional[Motif]:
         """
         Get a single strand.
 
@@ -430,7 +430,7 @@ class Parser:
 
     def __get_helix(
         self, sequence: str, structure: str, connections: List[int], start: int
-    ) -> Motif:
+    ) -> Optional[Motif]:
         """
         Get a helix or junction.
 
@@ -504,7 +504,7 @@ class Parser:
 
     def __get_junction_or_hairpin(
         self, sequence: str, structure: str, connections: List[int], start: int
-    ) -> Motif:
+    ) -> Optional[Motif]:
         """
         Get a junction or hairpin.
 

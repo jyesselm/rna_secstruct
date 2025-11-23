@@ -8,7 +8,7 @@ use pandas' extension API to register accessors.
 try:
     import json
 
-    import pandas as pd
+    import pandas as pd  # type: ignore[import-untyped]
 
     from rna_secstruct.json_encoder import SecStructJSONEncoder
     from rna_secstruct.secstruct import SecStruct

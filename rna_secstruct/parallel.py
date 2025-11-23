@@ -5,17 +5,21 @@ multiple RNA structures efficiently.
 """
 
 import multiprocessing as mp
-from typing import Any, Callable, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, List, Optional
 
-try:
+if TYPE_CHECKING:
     from rna_secstruct.connectivity import get_connectivity_list
     from rna_secstruct.secstruct import SecStruct
-except ImportError:
-    SecStruct = None
-    get_connectivity_list = None
+else:
+    try:
+        from rna_secstruct.connectivity import get_connectivity_list
+        from rna_secstruct.secstruct import SecStruct
+    except ImportError:
+        SecStruct = None  # type: ignore[assignment]
+        get_connectivity_list = None  # type: ignore[assignment]
 
 
-def _parse_single(sequence: str, structure: str) -> SecStruct:
+def _parse_single(sequence: str, structure: str) -> Any:
     """Parse a single structure (helper for parallel processing).
 
     Args:

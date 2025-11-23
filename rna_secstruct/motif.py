@@ -119,11 +119,11 @@ class Motif:
         return self.__parent
 
     @property
-    def m_type(self):
+    def m_type(self) -> str:
         """
         The type of motif.
         """
-        return self.__m_type
+        return self.__m_type  # type: ignore[no-any-return]
 
     @property
     def m_id(self):
@@ -154,18 +154,18 @@ class Motif:
         return self.__strands
 
     @property
-    def sequence(self):
+    def sequence(self) -> str:
         """
         Returns the sequence of the motif.
         """
-        return self.__sequence
+        return self.__sequence  # type: ignore[no-any-return]
 
     @property
-    def structure(self):
+    def structure(self) -> str:
         """
         Returns the structure of the motif.
         """
-        return self.__structure
+        return self.__structure  # type: ignore[no-any-return]
 
     @property
     def token(self):
@@ -240,19 +240,19 @@ class Motif:
         return f"{pad}{id_str}{self.__token} {self.__sequence} {self.__structure}{children}"
 
     # setters ##################################################################
-    @m_type.setter
-    def m_type(self, value):
+    @m_type.setter  # type: ignore[attr-defined,no-redef]
+    def m_type(self, value: str) -> None:
         # check if value is valid
         if value not in ["SINGLESTRAND", "HAIRPIN", "HELIX", "JUNCTION"]:
             raise ValueError(f"Invalid motif type: {value}")
         self.__m_type = value
 
-    @sequence.setter
-    def sequence(self, value):
+    @sequence.setter  # type: ignore[attr-defined,no-redef]
+    def sequence(self, value: str) -> None:
         self.__sequence = value
 
-    @structure.setter
-    def structure(self, value):
+    @structure.setter  # type: ignore[attr-defined,no-redef]
+    def structure(self, value: str) -> None:
         self.__structure = value
 
     # JSON serialization #########################################################

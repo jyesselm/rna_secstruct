@@ -129,7 +129,7 @@ known-first-party = ["rna_secstruct"]
 
 # MyPy type checker configuration
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.9"  # MyPy 1.18+ requires Python 3.9+, but code supports 3.8+
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false  # Start lenient, can tighten later

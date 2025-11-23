@@ -170,8 +170,8 @@ def _parse_connectivity(
     letter_positions = defaultdict(list)
 
     # Track number positions
-    number_pos_map = defaultdict(list)
-    number_positions = []
+    number_pos_map: Dict[int, List[Tuple[int, int, str]]] = defaultdict(list)
+    number_positions: List[Tuple[int, int, int, str]] = []
     for match in re.finditer(r"\d+", structure):
         num = int(match.group())
         num_str = structure[match.start() : match.end()]
@@ -294,11 +294,12 @@ def _parse_connectivity(
     # Third pass: process numbers (pair from outside in)
     if number_positions:
         for start, end, num, num_str in number_positions:
-            number_pos_map[num].append((start, end, num_str))
+            # Append tuple of (start, end, num_str) to the list for this number
+            number_pos_map[num].append((start, end, num_str))  # type: ignore[assignment]
 
         for num, positions in number_pos_map.items():
             if len(positions) % 2 != 0:
-                pos_list = [start for start, _, _ in positions]
+                pos_list = [start for start, _, _ in positions]  # type: ignore[misc]
                 raise ValueError(
                     f"Unpaired number '{num}': found {len(positions)} occurrence(s) starting at position(s) {pos_list} "
                     f"(must be even for pairing). "
@@ -307,8 +308,8 @@ def _parse_connectivity(
                 )
 
             while positions:
-                (i_start, i_end, i_num_str) = positions.pop(0)
-                (j_start, j_end, j_num_str) = positions.pop()
+                (i_start, i_end, i_num_str) = positions.pop(0)  # type: ignore[misc]
+                (j_start, j_end, j_num_str) = positions.pop()  # type: ignore[misc]
                 # Only pair if not already paired by brackets or letters
                 if connections[i_start] != -1:
                     raise ValueError(
@@ -499,6 +500,8 @@ def _get_connectivity(
     if format == "bracket":
         # Filter structure to only allow bracket characters
         allowed_chars = set(".& ")
+        if bracket_types is None:
+            bracket_types = [("(", ")")]
         for open_bracket, close_bracket in bracket_types:
             allowed_chars.add(open_bracket)
             allowed_chars.add(close_bracket)
@@ -587,7 +590,7 @@ class ConnectivityList:
                 # Multi-bracket format - use the first bracket type's connectivity
                 bracket_name = list(conn.keys())[0]
                 self.connections = conn[bracket_name]
-                self.pair_types = pair_types[bracket_name]
+                self.pair_types = pair_types[bracket_name]  # type: ignore[index,assignment]
             else:
                 # Single format with pair types
                 self.connections = conn
@@ -624,7 +627,26 @@ class ConnectivityList:
         Returns:
             Optional[str]: The pair type (e.g., '(', '[', 'a', '1') or None if unpaired.
         """
-        return self.pair_types.get(index)
+        if not isinstance(self.pair_types, dict) or not self.pair_types:
+            return None
+
+        # Check if it's nested dict (multi-bracket) or direct dict
+        # Check the type of keys to determine format
+        first_key = next(iter(self.pair_types.keys()))
+
+        # If first key is a string, it's multi-bracket format: Dict[str, Dict[int, str]]
+        # Mypy has trouble with Union types - it thinks keys can't be strings
+        # but they can be in the nested dict case. Use type ignore for unreachable.
+        if isinstance(first_key, str):  # type: ignore[unreachable]
+            first_value = self.pair_types[first_key]  # type: ignore[index]
+            if isinstance(first_value, dict):
+                return first_value.get(index)
+            return None
+
+        # Otherwise it's single format: Dict[int, str]
+        # Access directly using the index
+        # Mypy knows this is Dict[int, str] at this point, but needs help with Union
+        return self.pair_types.get(index)  # type: ignore[call-overload]
 
     def is_nucleotide_paired(self, index: int) -> bool:
         """Check if a nucleotide at a given index is paired.
@@ -779,10 +801,20 @@ def connectivity_list(
         return result
     elif isinstance(result, dict):
         # Multi-bracket format - return first bracket type's connectivity
-        return list(result.values())[0]
-    else:
-        # Shouldn't happen, but handle it
-        return result[0] if isinstance(result, tuple) else result
+        first_value = list(result.values())[0]
+        if isinstance(first_value, list):
+            return first_value
+        # Fallback - shouldn't happen with valid input
+        return []  # type: ignore[unreachable]
+    elif isinstance(result, tuple) and result:
+        # Shouldn't happen with return_pair_types=False, but handle it
+        first_elem = result[0]
+        if isinstance(first_elem, list):
+            return first_elem
+        return []
+    # Fallback - defensive programming for unexpected return types
+    # Mypy thinks this is unreachable, but it's a safety fallback
+    return []  # type: ignore[unreachable]
 
 
 def is_circular(start: int, connections: List[int]) -> bool:
