@@ -1,7 +1,8 @@
 """Tests for parallel processing."""
 
 import pytest
-from rna_secstruct.parallel import batch_parse, batch_connectivity, batch_apply
+
+from rna_secstruct.parallel import batch_apply, batch_connectivity, batch_parse
 from rna_secstruct.secstruct import SecStruct
 
 

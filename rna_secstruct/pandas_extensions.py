@@ -6,11 +6,12 @@ use pandas' extension API to register accessors.
 """
 
 try:
-    import pandas as pd
     import json
-    from typing import Optional, List, Union
-    from rna_secstruct.secstruct import SecStruct
+
+    import pandas as pd
+
     from rna_secstruct.json_encoder import SecStructJSONEncoder
+    from rna_secstruct.secstruct import SecStruct
 
     PANDAS_AVAILABLE = True
 except ImportError:

@@ -3,12 +3,10 @@ A simple parser of rna secondary structure inspired by `rna_library` code writte
 by Chris Jurich
 """
 
-import re
-from typing import List, Dict, Tuple, Optional
-from dataclasses import dataclass
+from typing import List, Optional, Tuple
 
-from rna_secstruct.motif import Motif
 from rna_secstruct.logger import get_logger
+from rna_secstruct.motif import Motif
 
 log = get_logger("parser")
 
@@ -150,7 +148,7 @@ def is_valid_dot_bracket_str(structure: str) -> bool:
     for ii in range(3):
         invalid = "(" + "." * ii + ")"
         if structure.find(invalid) != -1:
-            log.warning(f"Structure has a hairpin that is too small")
+            log.warning("Structure has a hairpin that is too small")
             break
 
     return True
@@ -190,7 +188,7 @@ def connectivity_list(structure: str) -> List[int]:
         log.warning(
             f"Structure has {len(pairs)} unmatched opening parentheses at positions {pairs}"
         )
-        for pos in pairs:
+        for _pos in pairs:
             # Keep as unpaired (already -1)
             pass
     return connections
@@ -387,7 +385,6 @@ class Parser:
         Returns:
             A list of motifs or None.
         """
-        motifs = []
         if start >= len(connections):
             return None
         if connections[start] == -1:
@@ -487,22 +484,21 @@ class Parser:
         helix = Motif("HELIX", [lhs, rhs], f"{seq1}&{seq2}", f"{ss1}&{ss2}", self.motif_id)
         self.motif_id += 1
 
-        if start + helix_len - 1 < len(connections):
-            if (
-                connections[start + helix_len - 1] != -1
-                and connections[start + helix_len - 1] > start
-            ):
-                child = self.__get_junction_or_hairpin(
-                    sequence, structure, connections, start + helix_len - 1
-                )
-                if child is not None:
-                    helix.add_child(child)
+        if (
+            start + helix_len - 1 < len(connections)
+            and connections[start + helix_len - 1] != -1
+            and connections[start + helix_len - 1] > start
+        ):
+            child = self.__get_junction_or_hairpin(
+                sequence, structure, connections, start + helix_len - 1
+            )
+            if child is not None:
+                helix.add_child(child)
 
-        if rhs and rhs[-1] + 1 < len(connections):
-            if not is_circular(rhs[-1], connections):
-                motif = self.__get_motifs(sequence, structure, connections, rhs[-1] + 1)
-                if motif is not None:
-                    helix.add_child(motif)
+        if rhs and rhs[-1] + 1 < len(connections) and not is_circular(rhs[-1], connections):
+            motif = self.__get_motifs(sequence, structure, connections, rhs[-1] + 1)
+            if motif is not None:
+                helix.add_child(motif)
 
         return helix
 

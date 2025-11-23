@@ -4,8 +4,8 @@ import json
 from typing import Any
 
 try:
-    from rna_secstruct.secstruct import SecStruct
     from rna_secstruct.motif import Motif
+    from rna_secstruct.secstruct import SecStruct
 except ImportError:
     SecStruct = None
     Motif = None
@@ -26,9 +26,12 @@ class SecStructJSONEncoder(json.JSONEncoder):
         Returns:
             JSON-serializable representation of the object.
         """
-        if SecStruct is not None and isinstance(obj, SecStruct):
-            return obj.to_dict()
-        elif Motif is not None and isinstance(obj, Motif):
+        if (
+            SecStruct is not None
+            and isinstance(obj, SecStruct)
+            or Motif is not None
+            and isinstance(obj, Motif)
+        ):
             return obj.to_dict()
         # Let base class handle other types
         return super().default(obj)

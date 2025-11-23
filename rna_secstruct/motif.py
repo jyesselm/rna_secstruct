@@ -67,19 +67,13 @@ class Motif:
 
     def __recursive_build(self, btype):
         result = ""
-        if btype == "SEQUENCE":
-            value = self.__sequence
-        else:
-            value = self.__structure
+        value = self.__sequence if btype == "SEQUENCE" else self.__structure
         if self.__m_type == "SINGLESTRAND":
             result = value
             for c in self.__children:
                 result += c.__recursive_build(btype)
         elif self.__m_type == "HAIRPIN":
-            if self.__parent is not None:
-                result = value[1:-1]
-            else:
-                result = value
+            result = value[1:-1] if self.__parent is not None else value
         elif self.__m_type == "HELIX":
             result = value
             if len(self.__children) > 0:
@@ -240,7 +234,7 @@ class Motif:
             return f"{pad}{id_str}{self.__token} {self.__sequence} {self.__structure}"
         else:
             contents = [""]
-            for i, child in enumerate(self.__children):
+            for _i, child in enumerate(self.__children):
                 contents.append(child.to_str(depth + 1))
             children = "\n".join(contents)
         return f"{pad}{id_str}{self.__token} {self.__sequence} {self.__structure}{children}"

@@ -2,9 +2,7 @@
 testing secondary structure parsing
 """
 
-import pytest
-from rna_secstruct.parser import Parser, connectivity_list, ConnectivityList
-
+from rna_secstruct.parser import ConnectivityList, Parser, connectivity_list
 
 # helper funcs ###############################################################
 
@@ -48,15 +46,15 @@ def test_connectivity_list_is_nucleotide_paired():
     seq = "GGGAAACCC"
     ss = "(((...)))"
     cl = ConnectivityList(seq, ss)
-    assert cl.is_nucleotide_paired(0) == True
-    assert cl.is_nucleotide_paired(1) == True
-    assert cl.is_nucleotide_paired(2) == True
-    assert cl.is_nucleotide_paired(3) == False
-    assert cl.is_nucleotide_paired(4) == False
-    assert cl.is_nucleotide_paired(5) == False
-    assert cl.is_nucleotide_paired(6) == True
-    assert cl.is_nucleotide_paired(7) == True
-    assert cl.is_nucleotide_paired(8) == True
+    assert cl.is_nucleotide_paired(0)
+    assert cl.is_nucleotide_paired(1)
+    assert cl.is_nucleotide_paired(2)
+    assert not cl.is_nucleotide_paired(3)
+    assert not cl.is_nucleotide_paired(4)
+    assert not cl.is_nucleotide_paired(5)
+    assert cl.is_nucleotide_paired(6)
+    assert cl.is_nucleotide_paired(7)
+    assert cl.is_nucleotide_paired(8)
 
 
 def test_connectivity_list_get_paired_nucleotide():
@@ -121,8 +119,8 @@ def test_in_valid_dot_brackets(caplog):
         # Should have warning about invalid sequence characters
         assert result is not None
         # Check that warnings were logged about invalid characters
-        warning_messages = [record.message for record in caplog.records]
         # The parser should handle invalid sequence characters gracefully
+        _ = [record.message for record in caplog.records]
 
 
 def test_simple_hairpins():

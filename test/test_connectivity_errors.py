@@ -3,16 +3,12 @@ Tests for error handling and validation in connectivity module.
 """
 
 import pytest
+
 from rna_secstruct.connectivity import (
-    get_connectivity_list,
-    connectivity_list,
     ConnectivityList,
-    STANDARD_BRACKET_TYPES,
-)
-from rna_secstruct.connectivity import (
     _parse_connectivity,
-    _validate_bracket_types,
-    _validate_structure_input,
+    connectivity_list,
+    get_connectivity_list,
 )
 
 
@@ -132,7 +128,6 @@ class TestConflictingPairings:
         """Test that bracket-letter conflict has clear error message."""
         # Structure where a position is paired by both bracket and letter
         # This is tricky to create, but we can test the error message format
-        structure = "((a))"
         # The 'a' at position 2 is inside brackets, so it might conflict
         # Actually, this might work if brackets pair first, then letters only pair unpaired positions
         # Let me create a real conflict case

@@ -5,12 +5,13 @@ This test reads all .dbn files from a specified directory, parses each one,
 and records which ones fail and why. Uses multiprocessing for parallel processing.
 """
 
-import pytest
 import multiprocessing as mp
-from pathlib import Path
-from typing import List, Tuple, Dict, Optional
-from concurrent.futures import ProcessPoolExecutor, as_completed
 import traceback
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import pytest
 
 from rna_secstruct.parser import Parser
 
@@ -28,7 +29,7 @@ def read_dbn_file(filepath: Path) -> Tuple[str, str]:
     Raises:
         ValueError: If file format is invalid
     """
-    with open(filepath, "r") as f:
+    with open(filepath) as f:
         lines = f.readlines()
 
     # Filter out comment lines (starting with #)
@@ -130,7 +131,7 @@ def test_parse_all_dbn_files():
     # Print summary
     total = len(dbn_files)
     print(f"\n{'='*60}")
-    print(f"Parsing Summary:")
+    print("Parsing Summary:")
     print(f"  Total files: {total}")
     print(f"  Successful: {successes}")
     print(f"  Failed: {len(failures)}")
@@ -144,7 +145,7 @@ def test_parse_all_dbn_files():
             error_type = error_msg.split(":")[0]  # Get exception type
             error_types[error_type] = error_types.get(error_type, 0) + 1
 
-        print(f"\nFailure breakdown by error type:")
+        print("\nFailure breakdown by error type:")
         for error_type, count in sorted(error_types.items(), key=lambda x: -x[1]):
             print(f"  {error_type}: {count}")
 

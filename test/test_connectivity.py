@@ -3,21 +3,18 @@ Comprehensive tests for connectivity module with pair type tracking.
 """
 
 import pytest
-from rna_secstruct.connectivity import (
-    connectivity_list,  # Backward compatibility function
-    get_connectivity_list,  # New factory function
-    ConnectivityList,
-    is_circular,
-    STANDARD_BRACKET_TYPES,
-    has_pseudoknot,
-)
 
 # Import internal functions for testing
 from rna_secstruct.connectivity import (
+    STANDARD_BRACKET_TYPES,
+    ConnectivityList,
+    _detect_structure_format,
+    _get_connectivity,
     _parse_connectivity,
     _parse_multi_bracket,
-    _get_connectivity,
-    _detect_structure_format,
+    connectivity_list,  # Backward compatibility function
+    has_pseudoknot,
+    is_circular,
 )
 
 
@@ -89,10 +86,7 @@ class TestMultiBracketTypes:
         # For this test, we'll use the first bracket type's connectivity
         result = connectivity_list(structure, bracket_types=STANDARD_BRACKET_TYPES)
         # With multiple bracket types, result is a dict - get first one
-        if isinstance(result, dict):
-            connections = list(result.values())[0]
-        else:
-            connections = result
+        connections = list(result.values())[0] if isinstance(result, dict) else result
         # Check that pairs are correct
         # Structure: (([[))]] - ( at 0 pairs with ) at 5, ( at 1 pairs with ) at 4
         # [ at 2 pairs with ] at 7, [ at 3 pairs with ] at 6
@@ -397,8 +391,8 @@ class TestPseudoknotDetection:
         multi_conn = {name: conn for name, (conn, _) in multi_result.items()}
         # This might or might not be a pseudo-knot depending on interpretation
         # Let's test the actual behavior
-        result = has_pseudoknot(multi_conn)
         # The result depends on whether pairs cross
+        has_pseudoknot(multi_conn)
 
 
 class TestIsCircular:

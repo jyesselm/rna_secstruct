@@ -4,13 +4,12 @@ This module provides parallel batch operations for parsing and analyzing
 multiple RNA structures efficiently.
 """
 
-from typing import List, Optional, Callable, Any, Tuple
 import multiprocessing as mp
-from functools import partial
+from typing import Any, Callable, List, Optional
 
 try:
-    from rna_secstruct.secstruct import SecStruct
     from rna_secstruct.connectivity import get_connectivity_list
+    from rna_secstruct.secstruct import SecStruct
 except ImportError:
     SecStruct = None
     get_connectivity_list = None

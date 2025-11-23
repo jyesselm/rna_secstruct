@@ -2,8 +2,7 @@
 Tests for mixed format connectivity (brackets + letters/numbers).
 """
 
-import pytest
-from rna_secstruct.connectivity import get_connectivity_list, _detect_structure_format
+from rna_secstruct.connectivity import _detect_structure_format, get_connectivity_list
 
 
 class TestMixedFormats:

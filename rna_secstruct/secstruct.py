@@ -2,11 +2,11 @@
 representation of secondary structure with motif
 """
 
-from typing import List, Optional, Union, Tuple
 from dataclasses import dataclass
-from rna_secstruct.parser import Parser, is_valid_dot_bracket_str
+from typing import List, Optional, Tuple, Union
+
 from rna_secstruct.motif import Motif
-from rna_secstruct.connectivity import get_connectivity_list
+from rna_secstruct.parser import Parser, is_valid_dot_bracket_str
 
 
 @dataclass(order=True)
@@ -213,10 +213,7 @@ class SecStruct:
             raise ValueError("cannot add strands to a motif")
         m_type = m.m_type
         if m.num_strands() > sequence.count("&") + 1 and sequence.count("&") == 0:
-            if structure.count("(") == 0:
-                m_type = "SINGLESTRAND"
-            else:
-                m_type = "HAIRPIN"
+            m_type = "SINGLESTRAND" if structure.count("(") == 0 else "HAIRPIN"
         if m.has_parent() and m.parent.is_helix():
             self.__change_inner_flanking(m.parent, sequence[0] + sequence[-1])
         strands = sequence.split("&")
@@ -706,10 +703,9 @@ class SecStruct:
             search_seq = self.__sequence[start:end]
             search_struct = self.__structure[start:end]
             pos = search_seq.find(sub_seq)
-            if pos != -1:
+            if pos != -1 and search_struct[pos : pos + len(sub_seq)] == sub_struct:
                 # Verify structure matches at this position
-                if search_struct[pos : pos + len(sub_seq)] == sub_struct:
-                    matches.append((start + pos, start + pos + len(sub_seq)))
+                matches.append((start + pos, start + pos + len(sub_seq)))
         else:
             # Single-strand search
             search_seq = self.__sequence[start:end]
@@ -1055,6 +1051,6 @@ class SecStruct:
         """
         import json
 
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             data = json.load(f)
         return cls.from_dict(data)

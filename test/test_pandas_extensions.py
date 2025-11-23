@@ -4,7 +4,9 @@ import pytest
 
 try:
     import pandas as pd
-    import rna_secstruct  # This registers accessors
+
+    # Import to register accessors
+    import rna_secstruct  # noqa: F401
     from rna_secstruct.secstruct import SecStruct
 
     PANDAS_AVAILABLE = True

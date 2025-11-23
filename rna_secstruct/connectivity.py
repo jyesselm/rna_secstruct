@@ -16,9 +16,8 @@ All other functions are internal and should not be used directly.
 """
 
 import re
-from typing import List, Dict, Tuple, Optional, Union
 from collections import defaultdict
-
+from typing import Dict, List, Optional, Tuple, Union
 
 # Standard bracket types for pseudo-knots
 STANDARD_BRACKET_TYPES = [
@@ -220,14 +219,13 @@ def _parse_connectivity(
             if return_pair_types:
                 pair_types[complement] = pair_type
                 pair_types[index] = char
-        elif char not in (".", "&", " "):
+        elif char not in (".", "&", " ") and re.match(r"^[a-zA-Z]$", char):
             # Check if it's a valid letter (a-z, A-Z) for pairing
-            if re.match(r"^[a-zA-Z]$", char):
-                original_char = char
-                if not case_sensitive:
-                    char = char.lower()
-                letter_positions[char].append((index, original_char))
-            # Other characters are ignored - treated as unpaired
+            original_char = char
+            if not case_sensitive:
+                char = char.lower()
+            letter_positions[char].append((index, original_char))
+        # Other characters are ignored - treated as unpaired
         # '.' and '&' and ' ' are ignored (unpaired and strand separator)
 
     # Check for unmatched opening brackets

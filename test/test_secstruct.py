@@ -3,8 +3,10 @@ testing the secondary structure object
 """
 
 import os
+
 import pytest
-from rna_secstruct.secstruct import SecStruct, MotifSearchParams
+
+from rna_secstruct.secstruct import MotifSearchParams, SecStruct
 
 # get the current directory
 CUR_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -24,7 +26,7 @@ def test_simple():
 def test_itermotifs():
     struct = SecStruct("GGGAAACCC", "(((...)))")
     inds = []
-    for i, motif in struct.itermotifs():
+    for i, _motif in struct.itermotifs():
         inds.append(i)
     assert inds == [0, 1]
 
@@ -558,23 +560,21 @@ def test_find_structure():
 
 def test_enhanced_motif_search_params():
     """Test enhanced MotifSearchParams with new fields."""
-    struct = SecStruct("GGGAAACCC", "(((...)))")
-
     # Test token search
-    msp = MotifSearchParams(token="Helix1")
+    MotifSearchParams(token="Helix1")
     # This will trigger parsing, which may have issues with complex structures
     # But the API should work
 
     # Test min_length and max_length
-    msp2 = MotifSearchParams(min_length=5, max_length=10)
+    MotifSearchParams(min_length=5, max_length=10)
     # Should work with existing search methods
 
     # Test strand_lengths
-    msp3 = MotifSearchParams(strand_lengths=[3, 3])
+    MotifSearchParams(strand_lengths=[3, 3])
     # Should work with get_motifs_by_strand_lengths
 
     # Test has_children
-    msp4 = MotifSearchParams(has_children=False)
+    MotifSearchParams(has_children=False)
     # Should filter motifs by whether they have children
 
     assert True  # If we get here, the enhanced params are constructible
@@ -683,9 +683,8 @@ def test_comparison_operations():
 
 def test_json_serialization():
     """Test JSON serialization methods."""
-    import json
-    import tempfile
     import os
+    import tempfile
 
     struct = SecStruct("GGGAAACCC", "(((...)))")
 
