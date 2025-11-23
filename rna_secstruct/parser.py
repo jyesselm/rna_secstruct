@@ -134,7 +134,9 @@ def is_valid_dot_bracket_str(structure: str) -> bool:
             invalid_chars.add(ch)
 
         if lparen_ct < 0:
-            log.warning(f"Structure has unmatched closing parentheses: {structure[:100]}...")
+            log.warning(
+                f"Structure has unmatched closing parentheses: {structure[:100]}..."
+            )
             break
 
     if invalid_chars:
@@ -142,7 +144,9 @@ def is_valid_dot_bracket_str(structure: str) -> bool:
         pass  # Normalization will log the warning
 
     if lparen_ct != 0:
-        log.warning(f"Structure has unbalanced parentheses (unmatched count: {lparen_ct})")
+        log.warning(
+            f"Structure has unbalanced parentheses (unmatched count: {lparen_ct})"
+        )
 
     # Check for small hairpins in standard parentheses
     for ii in range(3):
@@ -182,7 +186,9 @@ def connectivity_list(structure: str) -> List[int]:
                 connections[index] = complement
             else:
                 # Unmatched closing parenthesis
-                log.warning(f"Unmatched closing parenthesis at position {index} in structure")
+                log.warning(
+                    f"Unmatched closing parenthesis at position {index} in structure"
+                )
     if len(pairs):
         # Unmatched opening parentheses - mark them as unpaired
         log.warning(
@@ -255,7 +261,10 @@ class ConnectivityList:
         """
         if not self.is_nucleotide_paired(index):
             return "."
-        return self.sequence[index] + self.sequence[self.get_paired_nucleotide(index)]
+        return (
+            self.sequence[index]
+            + self.sequence[self.get_paired_nucleotide(index)]
+        )
 
 
 def is_circular(start, connections):
@@ -299,7 +308,9 @@ class Parser:
         """
         self.motif_id = 0
         # Normalize inputs before processing
-        sequence, structure = self.__check_to_see_if_inputs_valid(sequence, structure)
+        sequence, structure = self.__check_to_see_if_inputs_valid(
+            sequence, structure
+        )
         # Normalize structure to handle invalid characters
         structure = normalize_structure(structure)
         # Attempt to balance structure
@@ -309,14 +320,20 @@ class Parser:
             min_len = min(len(sequence), len(structure))
             if len(sequence) > len(structure):
                 sequence = sequence[:min_len]
-                log.warning(f"Sequence truncated to match structure length: {min_len}")
+                log.warning(
+                    f"Sequence truncated to match structure length: {min_len}"
+                )
             else:
                 structure = structure[:min_len]
-                log.warning(f"Structure truncated to match structure length: {min_len}")
+                log.warning(
+                    f"Structure truncated to match structure length: {min_len}"
+                )
         connections = connectivity_list(structure)
         return self.__get_motifs(sequence, structure, connections, 0)
 
-    def __check_to_see_if_inputs_valid(self, sequence: str, structure: str) -> Tuple[str, str]:
+    def __check_to_see_if_inputs_valid(
+        self, sequence: str, structure: str
+    ) -> Tuple[str, str]:
         """
         Check if the inputs are valid and normalize them.
 
@@ -388,7 +405,9 @@ class Parser:
         if start >= len(connections):
             return None
         if connections[start] == -1:
-            return self.__get_single_strand(sequence, structure, connections, start)
+            return self.__get_single_strand(
+                sequence, structure, connections, start
+            )
         return self.__get_helix(sequence, structure, connections, start)
 
     def __get_single_strand(
@@ -424,7 +443,12 @@ class Parser:
         self.motif_id += 1
         if start + single_strand_count < len(connections):
             sstrand.add_child(
-                self.__get_motifs(sequence, structure, connections, start + single_strand_count)
+                self.__get_motifs(
+                    sequence,
+                    structure,
+                    connections,
+                    start + single_strand_count,
+                )
             )
         return sstrand
 
@@ -451,7 +475,9 @@ class Parser:
 
         if connections[start] == -1:
             # Not actually a helix, treat as single strand
-            return self.__get_single_strand(sequence, structure, connections, start)
+            return self.__get_single_strand(
+                sequence, structure, connections, start
+            )
 
         helix_len = self.__get_helix_length(connections, start)
         if helix_len == 0:
@@ -461,11 +487,15 @@ class Parser:
         lhs, rhs = [], []
         for index in range(start, start + helix_len):
             if index >= len(connections):
-                log.warning(f"Index {index} is out of bounds while building helix")
+                log.warning(
+                    f"Index {index} is out of bounds while building helix"
+                )
                 break
             lhs.append(index)
             if connections[index] == -1:
-                log.warning(f"Unpaired position {index} in helix at start {start}")
+                log.warning(
+                    f"Unpaired position {index} in helix at start {start}"
+                )
                 continue
             if connections[index] >= len(connections):
                 log.warning(
@@ -476,12 +506,16 @@ class Parser:
 
         if not rhs:
             log.warning(f"No valid pairs found in helix starting at {start}")
-            return self.__get_single_strand(sequence, structure, connections, start)
+            return self.__get_single_strand(
+                sequence, structure, connections, start
+            )
 
         rhs.reverse()
         seq1, ss1 = self.__get_seq_and_ss_from_strand(sequence, structure, lhs)
         seq2, ss2 = self.__get_seq_and_ss_from_strand(sequence, structure, rhs)
-        helix = Motif("HELIX", [lhs, rhs], f"{seq1}&{seq2}", f"{ss1}&{ss2}", self.motif_id)
+        helix = Motif(
+            "HELIX", [lhs, rhs], f"{seq1}&{seq2}", f"{ss1}&{ss2}", self.motif_id
+        )
         self.motif_id += 1
 
         if (
@@ -495,8 +529,14 @@ class Parser:
             if child is not None:
                 helix.add_child(child)
 
-        if rhs and rhs[-1] + 1 < len(connections) and not is_circular(rhs[-1], connections):
-            motif = self.__get_motifs(sequence, structure, connections, rhs[-1] + 1)
+        if (
+            rhs
+            and rhs[-1] + 1 < len(connections)
+            and not is_circular(rhs[-1], connections)
+        ):
+            motif = self.__get_motifs(
+                sequence, structure, connections, rhs[-1] + 1
+            )
             if motif is not None:
                 helix.add_child(motif)
 
@@ -522,10 +562,14 @@ class Parser:
 
         # Check bounds
         if pos >= len(structure) or pos >= len(connections):
-            log.warning(f"Position {pos} is out of bounds for structure of length {len(structure)}")
+            log.warning(
+                f"Position {pos} is out of bounds for structure of length {len(structure)}"
+            )
             # Return a single strand as fallback
             if pos < len(connections):
-                return self.__get_single_strand(sequence, structure, connections, pos)
+                return self.__get_single_strand(
+                    sequence, structure, connections, pos
+                )
             return None
 
         # pos should be the first opening pair of a junction or hairpin
@@ -537,7 +581,9 @@ class Parser:
             )
             # If not paired, treat as single strand
             if connections[pos] == -1:
-                return self.__get_single_strand(sequence, structure, connections, pos)
+                return self.__get_single_strand(
+                    sequence, structure, connections, pos
+                )
             # Otherwise try to continue with the paired position
             pos = connections[pos]
             if pos == start:
@@ -546,7 +592,9 @@ class Parser:
 
         while True:
             if pos >= len(structure) or pos >= len(connections):
-                log.warning(f"Position {pos} is out of bounds while processing junction/hairpin")
+                log.warning(
+                    f"Position {pos} is out of bounds while processing junction/hairpin"
+                )
                 break
 
             next_strand = [pos]
@@ -554,7 +602,9 @@ class Parser:
 
             # Check bounds before accessing
             if pos >= len(connections):
-                log.warning(f"Position {pos} is out of bounds while building strand")
+                log.warning(
+                    f"Position {pos} is out of bounds while building strand"
+                )
                 break
 
             while pos < len(connections) and connections[pos] == -1:
@@ -587,16 +637,23 @@ class Parser:
         self.motif_id += 1
         if len(strands) > 1:
             seq_and_ss = [
-                self.__get_seq_and_ss_from_strand(sequence, structure, strand) for strand in strands
+                self.__get_seq_and_ss_from_strand(sequence, structure, strand)
+                for strand in strands
             ]
             seq = "&".join([seq for seq, ss in seq_and_ss])
             ss = "&".join([ss for seq, ss in seq_and_ss])
             m = Motif("JUNCTION", strands, seq, ss, self.motif_id - 1)
             for strand in strands[:-1]:
-                m.add_child(self.__get_motifs(sequence, structure, connections, strand[-1]))
+                m.add_child(
+                    self.__get_motifs(
+                        sequence, structure, connections, strand[-1]
+                    )
+                )
             return m
         else:
-            seq, ss = self.__get_seq_and_ss_from_strand(sequence, structure, strands[0])
+            seq, ss = self.__get_seq_and_ss_from_strand(
+                sequence, structure, strands[0]
+            )
             return Motif("HAIRPIN", strands, seq, ss, self.motif_id - 1)
 
     def __get_helix_length(self, connections: List[int], start: int) -> int:
@@ -615,7 +672,9 @@ class Parser:
 
         complement = connections[start]
         if complement >= len(connections):
-            log.warning(f"Complement {complement} is out of bounds for position {start}")
+            log.warning(
+                f"Complement {complement} is out of bounds for position {start}"
+            )
             return 0
 
         length = 0

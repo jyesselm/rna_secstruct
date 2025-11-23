@@ -32,7 +32,9 @@ class TestInputValidation:
 
     def test_length_mismatch(self):
         """Test that sequence/structure length mismatch raises clear error."""
-        with pytest.raises(ValueError, match="Sequence and structure must have the same length"):
+        with pytest.raises(
+            ValueError, match="Sequence and structure must have the same length"
+        ):
             get_connectivity_list("GGGAAACCC", "(((...))")
 
     def test_non_string_sequence(self):
@@ -57,28 +59,39 @@ class TestBracketValidation:
     def test_same_open_close_bracket(self):
         """Test that same open/close bracket raises error."""
         with pytest.raises(
-            ValueError, match="Opening and closing brackets cannot be the same character"
+            ValueError,
+            match="Opening and closing brackets cannot be the same character",
         ):
             _parse_connectivity("((...))", bracket_types=[("(", "(")])
 
     def test_duplicate_opening_bracket(self):
         """Test that duplicate opening brackets raise error."""
         with pytest.raises(ValueError, match="Duplicate opening bracket"):
-            _parse_connectivity("((...))", bracket_types=[("(", ")"), ("(", "]")])
+            _parse_connectivity(
+                "((...))", bracket_types=[("(", ")"), ("(", "]")]
+            )
 
     def test_duplicate_closing_bracket(self):
         """Test that duplicate closing brackets raise error."""
         with pytest.raises(ValueError, match="Duplicate closing bracket"):
-            _parse_connectivity("((...))", bracket_types=[("(", ")"), ("[", ")")])
+            _parse_connectivity(
+                "((...))", bracket_types=[("(", ")"), ("[", ")")]
+            )
 
     def test_conflicting_bracket_types(self):
         """Test that conflicting bracket types raise error."""
-        with pytest.raises(ValueError, match="conflict with existing bracket types"):
-            _parse_connectivity("((...))", bracket_types=[("(", ")"), (")", "[")])
+        with pytest.raises(
+            ValueError, match="conflict with existing bracket types"
+        ):
+            _parse_connectivity(
+                "((...))", bracket_types=[("(", ")"), (")", "[")]
+            )
 
     def test_invalid_bracket_type_format(self):
         """Test that invalid bracket type format raises error."""
-        with pytest.raises(ValueError, match="must be a tuple of exactly two strings"):
+        with pytest.raises(
+            ValueError, match="must be a tuple of exactly two strings"
+        ):
             _parse_connectivity("((...))", bracket_types=[("(", ")", "extra")])
 
 
@@ -155,7 +168,10 @@ class TestErrorMessageClarity:
         except ValueError as e:
             error_msg = str(e)
             # Error should explain the problem
-            assert "unmatched" in error_msg.lower() or "unbalanced" in error_msg.lower()
+            assert (
+                "unmatched" in error_msg.lower()
+                or "unbalanced" in error_msg.lower()
+            )
             assert "opening bracket" in error_msg.lower()
             assert "position" in error_msg.lower()
 

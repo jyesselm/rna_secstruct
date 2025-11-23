@@ -84,9 +84,13 @@ class TestMultiBracketTypes:
         # When using multiple bracket types, connectivity_list returns a dict
         # Use single bracket type to get a list, or use the merged result
         # For this test, we'll use the first bracket type's connectivity
-        result = connectivity_list(structure, bracket_types=STANDARD_BRACKET_TYPES)
+        result = connectivity_list(
+            structure, bracket_types=STANDARD_BRACKET_TYPES
+        )
         # With multiple bracket types, result is a dict - get first one
-        connections = list(result.values())[0] if isinstance(result, dict) else result
+        connections = (
+            list(result.values())[0] if isinstance(result, dict) else result
+        )
         # Check that pairs are correct
         # Structure: (([[))]] - ( at 0 pairs with ) at 5, ( at 1 pairs with ) at 4
         # [ at 2 pairs with ] at 7, [ at 3 pairs with ] at 6
@@ -102,14 +106,18 @@ class TestMultiBracketTypes:
         structure = "([)]"
         # When using multiple bracket types, connectivity_list returns a dict
         # Use _parse_connectivity directly to get merged result
-        connections, _ = _parse_connectivity(structure, bracket_types=STANDARD_BRACKET_TYPES)
+        connections, _ = _parse_connectivity(
+            structure, bracket_types=STANDARD_BRACKET_TYPES
+        )
         assert connections[0] == 2  # ( pairs with )
         assert connections[1] == 3  # [ pairs with ]
 
     def test_multi_bracket_separate(self):
         """Test _parse_multi_bracket."""
         structure = "(([[))]]"
-        result = _parse_multi_bracket(structure, bracket_types=STANDARD_BRACKET_TYPES)
+        result = _parse_multi_bracket(
+            structure, bracket_types=STANDARD_BRACKET_TYPES
+        )
         assert "()" in result
         assert "[]" in result  # Bracket name is "[]" not "[["
         # Check that each bracket type has its own connectivity
@@ -164,7 +172,9 @@ class TestLetterBasedPairing:
     def test_case_sensitive_letters(self):
         """Test case-sensitive letter pairing."""
         structure = "a A a A"
-        connections, pair_types = _parse_connectivity(structure, case_sensitive=True)
+        connections, pair_types = _parse_connectivity(
+            structure, case_sensitive=True
+        )
         # Structure: "a A a A" has indices 0,1,2,3,4,5,6 (spaces at 1,3,5)
         # 'a' at 0 pairs with 'a' at 4
         # 'A' at 2 pairs with 'A' at 6
@@ -178,12 +188,18 @@ class TestLetterBasedPairing:
     def test_case_insensitive_letters(self):
         """Test case-insensitive letter pairing."""
         structure = "a A a A"
-        connections, pair_types = _parse_connectivity(structure, case_sensitive=False)
+        connections, pair_types = _parse_connectivity(
+            structure, case_sensitive=False
+        )
         # All should be treated as 'a' (lowercase)
         # 'a' at 0 pairs with 'A' at 6 (treated as 'a')
         # 'A' at 2 pairs with 'a' at 4 (treated as 'a')
-        assert connections[0] == 6  # first 'a' pairs with last 'A' (treated as 'a')
-        assert connections[2] == 4  # first 'A' pairs with 'a' at 4 (treated as 'a')
+        assert (
+            connections[0] == 6
+        )  # first 'a' pairs with last 'A' (treated as 'a')
+        assert (
+            connections[2] == 4
+        )  # first 'A' pairs with 'a' at 4 (treated as 'a')
         # Pair types should preserve original case
         assert pair_types[0] == "a"
         assert pair_types[6] == "A"
@@ -226,8 +242,12 @@ class TestNumberBasedPairing:
         # '10' at 0-1, '20' at 3-4, '20' at 6-7, '10' at 9-10
         # '10' at start (0) pairs with '10' at end (9)
         # '20' at 3 pairs with '20' at 6
-        assert connections[0] == 9  # first '10' (start at 0) pairs with second '10' (start at 9)
-        assert connections[3] == 6  # first '20' (start at 3) pairs with second '20' (start at 6)
+        assert (
+            connections[0] == 9
+        )  # first '10' (start at 0) pairs with second '10' (start at 9)
+        assert (
+            connections[3] == 6
+        )  # first '20' (start at 3) pairs with second '20' (start at 6)
         assert pair_types[0] == "10"
         assert pair_types[9] == "10"
         assert pair_types[3] == "20"
@@ -378,7 +398,9 @@ class TestPseudoknotDetection:
     def test_pseudoknot_detection(self):
         """Test pseudo-knot detection with multiple bracket types."""
         structure = "([)]"
-        multi_result = _parse_multi_bracket(structure, bracket_types=STANDARD_BRACKET_TYPES)
+        multi_result = _parse_multi_bracket(
+            structure, bracket_types=STANDARD_BRACKET_TYPES
+        )
         # Convert to dict of lists for has_pseudoknot
         multi_conn = {name: conn for name, (conn, _) in multi_result.items()}
         assert has_pseudoknot(multi_conn) is True
@@ -386,7 +408,9 @@ class TestPseudoknotDetection:
     def test_no_pseudoknot_nested(self):
         """Test that nested brackets don't create pseudo-knot."""
         structure = "(([[))]]"
-        multi_result = _parse_multi_bracket(structure, bracket_types=STANDARD_BRACKET_TYPES)
+        multi_result = _parse_multi_bracket(
+            structure, bracket_types=STANDARD_BRACKET_TYPES
+        )
         # Convert to dict of lists for has_pseudoknot
         multi_conn = {name: conn for name, (conn, _) in multi_result.items()}
         # This might or might not be a pseudo-knot depending on interpretation
@@ -431,7 +455,9 @@ class TestPairTypeTracking:
     def test_bracket_pair_types(self):
         """Test that bracket pair types are tracked."""
         structure = "(([...]))"
-        conn, pair_types = _parse_connectivity(structure, bracket_types=STANDARD_BRACKET_TYPES)
+        conn, pair_types = _parse_connectivity(
+            structure, bracket_types=STANDARD_BRACKET_TYPES
+        )
         # Structure: (([...])) has 9 characters (indices 0-8)
         # ( at 0 pairs with ) at 8
         # ( at 1 pairs with ) at 7
@@ -456,7 +482,9 @@ class TestPairTypeTracking:
     def test_multi_bracket_pair_types(self):
         """Test pair types with multiple bracket types."""
         structure = "([)]"
-        conn, pair_types = _parse_connectivity(structure, bracket_types=STANDARD_BRACKET_TYPES)
+        conn, pair_types = _parse_connectivity(
+            structure, bracket_types=STANDARD_BRACKET_TYPES
+        )
         assert pair_types[0] == "("
         assert pair_types[2] == ")"
         assert pair_types[1] == "["
@@ -483,7 +511,9 @@ class TestPairTypeTracking:
     def test_get_connectivity_with_pair_types(self):
         """Test _get_connectivity with return_pair_types=True."""
         structure = "(((...)))"
-        conn, pair_types = _get_connectivity(structure, format="bracket", return_pair_types=True)
+        conn, pair_types = _get_connectivity(
+            structure, format="bracket", return_pair_types=True
+        )
         assert isinstance(conn, list)
         assert isinstance(pair_types, dict)
         assert pair_types[0] == "("
@@ -492,7 +522,9 @@ class TestPairTypeTracking:
     def test_get_connectivity_letter_with_pair_types(self):
         """Test _get_connectivity with letter format and pair types."""
         structure = "a b c c b a"
-        conn, pair_types = _get_connectivity(structure, format="letter", return_pair_types=True)
+        conn, pair_types = _get_connectivity(
+            structure, format="letter", return_pair_types=True
+        )
         assert isinstance(conn, list)
         assert isinstance(pair_types, dict)
         assert pair_types[0] == "a"
@@ -529,7 +561,9 @@ class TestEdgeCases:
         # 'x' should be treated as unpaired (.)
         # Structure: ( at 0, ( at 1, x at 2 (unpaired), . at 3, . at 4, . at 5, ) at 6, ) at 7
         # Use _get_connectivity with explicit bracket format to ignore letters
-        connections = _get_connectivity(structure, format="bracket", bracket_types=[("(", ")")])
+        connections = _get_connectivity(
+            structure, format="bracket", bracket_types=[("(", ")")]
+        )
         # Should still work, treating 'x' as unpaired
         assert connections[0] == 7  # ( at 0 pairs with ) at 7
         assert connections[1] == 6  # ( at 1 pairs with ) at 6

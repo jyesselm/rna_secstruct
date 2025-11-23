@@ -83,7 +83,9 @@ def _validate_bracket_types(bracket_types: List[Tuple[str, str]]) -> None:
 
         open_bracket, close_bracket = bracket_pair
 
-        if not isinstance(open_bracket, str) or not isinstance(close_bracket, str):
+        if not isinstance(open_bracket, str) or not isinstance(
+            close_bracket, str
+        ):
             raise ValueError(
                 f"Bracket type at index {i} must be a tuple of two strings, "
                 f"got ({type(open_bracket).__name__}, {type(close_bracket).__name__})."
@@ -164,7 +166,10 @@ def _parse_connectivity(
     stacks: Dict[str, List[Tuple[int, str]]] = {
         open_bracket: [] for open_bracket, _ in bracket_types
     }
-    bracket_map = {close_bracket: open_bracket for open_bracket, close_bracket in bracket_types}
+    bracket_map = {
+        close_bracket: open_bracket
+        for open_bracket, close_bracket in bracket_types
+    }
 
     # Track letter positions (for pairing letters separately from brackets)
     letter_positions = defaultdict(list)
@@ -278,7 +283,12 @@ def _parse_connectivity(
                         f"Check your structure for errors."
                     )
 
-                if j < 0 or j >= len(connections) or i < 0 or i >= len(connections):
+                if (
+                    j < 0
+                    or j >= len(connections)
+                    or i < 0
+                    or i >= len(connections)
+                ):
                     raise ValueError(
                         f"Invalid pairing: position {i} is being paired with position {j}, "
                         f"but one or both positions are out of bounds (structure length is {len(connections)}). "
@@ -380,11 +390,14 @@ def _parse_multi_bracket(
         bracket_name = f"{open_bracket}{close_bracket}"
         # Extract only this bracket type, replace others with '.'
         filtered_structure = "".join(
-            char if char in (open_bracket, close_bracket, ".", "&") else "." for char in structure
+            char if char in (open_bracket, close_bracket, ".", "&") else "."
+            for char in structure
         )
         try:
             conn, pair_types = _parse_connectivity(
-                filtered_structure, [(open_bracket, close_bracket)], return_pair_types=True
+                filtered_structure,
+                [(open_bracket, close_bracket)],
+                return_pair_types=True,
             )
             result[bracket_name] = (conn, pair_types)
         except ValueError:
@@ -432,8 +445,16 @@ def _pairs_cross(conn1: List[int], conn2: List[int]) -> bool:
     Returns:
         bool: True if pairs from the two lists cross each other.
     """
-    pairs1 = [(i, conn1[i]) for i in range(len(conn1)) if conn1[i] != -1 and i < conn1[i]]
-    pairs2 = [(i, conn2[i]) for i in range(len(conn2)) if conn2[i] != -1 and i < conn2[i]]
+    pairs1 = [
+        (i, conn1[i])
+        for i in range(len(conn1))
+        if conn1[i] != -1 and i < conn1[i]
+    ]
+    pairs2 = [
+        (i, conn2[i])
+        for i in range(len(conn2))
+        if conn2[i] != -1 and i < conn2[i]
+    ]
 
     for i1, j1 in pairs1:
         for i2, j2 in pairs2:
@@ -487,7 +508,9 @@ def _get_connectivity(
         multi_result = _parse_multi_bracket(structure, bracket_types)
         if return_pair_types:
             conn_dict = {name: conn for name, (conn, _) in multi_result.items()}
-            pair_types_dict = {name: pt for name, (_, pt) in multi_result.items()}
+            pair_types_dict = {
+                name: pt for name, (_, pt) in multi_result.items()
+            }
             return conn_dict, pair_types_dict
         else:
             return {name: conn for name, (conn, _) in multi_result.items()}
@@ -505,9 +528,13 @@ def _get_connectivity(
         for open_bracket, close_bracket in bracket_types:
             allowed_chars.add(open_bracket)
             allowed_chars.add(close_bracket)
-        filtered_structure = "".join(char if char in allowed_chars else "." for char in structure)
+        filtered_structure = "".join(
+            char if char in allowed_chars else "." for char in structure
+        )
         conn, pair_types = _parse_connectivity(
-            filtered_structure, bracket_types, return_pair_types=return_pair_types
+            filtered_structure,
+            bracket_types,
+            return_pair_types=return_pair_types,
         )
     else:
         # Letter, number, or mixed format - use full parser
@@ -581,7 +608,9 @@ class ConnectivityList:
         if format is None:
             format = "auto"
 
-        result = _get_connectivity(structure, format, bracket_types, return_pair_types=True)
+        result = _get_connectivity(
+            structure, format, bracket_types, return_pair_types=True
+        )
 
         if isinstance(result, tuple):
             conn, pair_types = result
@@ -603,11 +632,17 @@ class ConnectivityList:
             bracket_name = list(result.keys())[0]
             open_bracket = bracket_name[0]
             filtered_structure = "".join(
-                char if char in (open_bracket, bracket_name[1], ".", "&") else "."
+                (
+                    char
+                    if char in (open_bracket, bracket_name[1], ".", "&")
+                    else "."
+                )
                 for char in structure
             )
             _, pair_types = _parse_connectivity(
-                filtered_structure, [(open_bracket, bracket_name[1])], return_pair_types=True
+                filtered_structure,
+                [(open_bracket, bracket_name[1])],
+                return_pair_types=True,
             )
             self.pair_types = pair_types
         else:
@@ -686,7 +721,10 @@ class ConnectivityList:
         """
         if not self.is_nucleotide_paired(index):
             return "."
-        return self.sequence[index] + self.sequence[self.get_paired_nucleotide(index)]
+        return (
+            self.sequence[index]
+            + self.sequence[self.get_paired_nucleotide(index)]
+        )
 
 
 def get_connectivity_list(
@@ -795,7 +833,10 @@ def connectivity_list(
         TypeError: If structure is not a string.
     """
     result = _get_connectivity(
-        structure, format=None, bracket_types=bracket_types, return_pair_types=False
+        structure,
+        format=None,
+        bracket_types=bracket_types,
+        return_pair_types=False,
     )
     if isinstance(result, list):
         return result

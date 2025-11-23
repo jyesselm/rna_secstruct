@@ -78,7 +78,11 @@ class Motif:
             result = value
             if len(self.__children) > 0:
                 result = value.split("&")
-                result = result[0] + self.__children[0].__recursive_build(btype) + result[1]
+                result = (
+                    result[0]
+                    + self.__children[0].__recursive_build(btype)
+                    + result[1]
+                )
             if len(self.__children) > 1:
                 result += self.__children[1].__recursive_build(btype)
         elif self.__m_type == "JUNCTION":

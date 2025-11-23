@@ -349,7 +349,9 @@ def test_insert():
     assert result2.sequence == "GGGXXXAAACCC"
     # Structure: "(((" (0-2) + "..." (insert) + "...)))" (3-8) = "(((...)))" (12 chars)
     # Actual result: 3 opening brackets + 6 dots (3 from insert + 3 from original) + 3 closing = 12 chars
-    expected_structure = "(((" + "..." + "...)))"  # Explicitly construct expected
+    expected_structure = (
+        "(((" + "..." + "...)))"
+    )  # Explicitly construct expected
     assert result2.structure == expected_structure
     assert len(result2.structure) == 12
 
@@ -722,7 +724,9 @@ def test_json_serialization():
     assert isinstance(d_with_motifs["motifs"], list)
 
     # Test to_json_file and from_json_file
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as f:
+    with tempfile.NamedTemporaryFile(
+        mode="w", delete=False, suffix=".json"
+    ) as f:
         temp_file = f.name
 
     try:
@@ -737,5 +741,7 @@ def test_json_serialization():
             os.remove(temp_file)
 
     # Test from_dict with invalid data
-    with pytest.raises(ValueError, match="must contain 'sequence' and 'structure' keys"):
+    with pytest.raises(
+        ValueError, match="must contain 'sequence' and 'structure' keys"
+    ):
         SecStruct.from_dict({"invalid": "data"})

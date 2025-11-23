@@ -24,13 +24,17 @@ if PANDAS_AVAILABLE:
     try:
         # Try to patch pandas JSON encoder if available
         if hasattr(pd.io, "json") and hasattr(pd.io.json, "_json"):
-            _original_default = getattr(pd.io.json._json.JSONEncoder, "default", None)
+            _original_default = getattr(
+                pd.io.json._json.JSONEncoder, "default", None
+            )
 
             def _patched_default(self, obj):
                 """Patched default method for pandas JSON encoder."""
                 if isinstance(obj, SecStruct):
                     return obj.to_dict()
-                elif hasattr(obj, "to_dict") and callable(getattr(obj, "to_dict", None)):
+                elif hasattr(obj, "to_dict") and callable(
+                    getattr(obj, "to_dict", None)
+                ):
                     # Check if it's a Motif (avoid circular import)
                     try:
                         from rna_secstruct.motif import Motif
@@ -65,7 +69,9 @@ if PANDAS_AVAILABLE:
             """
             self._obj = pandas_obj
 
-        def from_sequence_structure(self, seq_col: str, struct_col: str) -> "pd.Series":
+        def from_sequence_structure(
+            self, seq_col: str, struct_col: str
+        ) -> "pd.Series":
             """Create SecStruct objects from sequence and structure columns.
 
             Args:
@@ -75,7 +81,9 @@ if PANDAS_AVAILABLE:
             Returns:
                 pandas.Series: Series of SecStruct objects.
             """
-            return self._obj.apply(lambda row: SecStruct(row[seq_col], row[struct_col]), axis=1)
+            return self._obj.apply(
+                lambda row: SecStruct(row[seq_col], row[struct_col]), axis=1
+            )
 
         def add_secstruct(
             self, seq_col: str, struct_col: str, column: str = "secstruct"
@@ -94,7 +102,9 @@ if PANDAS_AVAILABLE:
             df[column] = self.from_sequence_structure(seq_col, struct_col)
             return df
 
-        def add_statistics(self, secstruct_col: str = "secstruct") -> "pd.DataFrame":
+        def add_statistics(
+            self, secstruct_col: str = "secstruct"
+        ) -> "pd.DataFrame":
             """Add multiple statistics columns to DataFrame.
 
             Args:
@@ -104,7 +114,9 @@ if PANDAS_AVAILABLE:
                 pd.DataFrame: DataFrame with added statistics columns.
             """
             df = self._obj.copy()
-            df[f"{secstruct_col}_num_bp"] = df[secstruct_col].apply(lambda s: s.get_num_basepairs())
+            df[f"{secstruct_col}_num_bp"] = df[secstruct_col].apply(
+                lambda s: s.get_num_basepairs()
+            )
             df[f"{secstruct_col}_num_unpaired"] = df[secstruct_col].apply(
                 lambda s: s.get_num_unpaired()
             )
@@ -138,7 +150,10 @@ if PANDAS_AVAILABLE:
             Returns:
                 str: JSON string representation.
             """
-            structs = [s.to_dict() if isinstance(s, SecStruct) else s for s in self._obj]
+            structs = [
+                s.to_dict() if isinstance(s, SecStruct) else s
+                for s in self._obj
+            ]
             return json.dumps(structs, cls=SecStructJSONEncoder, **kwargs)
 
         def from_json(self, json_str: str) -> "pd.Series":
@@ -161,7 +176,9 @@ if PANDAS_AVAILABLE:
                 pd.Series: Series of base pair counts.
             """
             return self._obj.apply(
-                lambda s: s.get_num_basepairs() if isinstance(s, SecStruct) else None
+                lambda s: (
+                    s.get_num_basepairs() if isinstance(s, SecStruct) else None
+                )
             )
 
         def num_motifs(self) -> "pd.Series":
@@ -171,7 +188,9 @@ if PANDAS_AVAILABLE:
                 pd.Series: Series of motif counts.
             """
             return self._obj.apply(
-                lambda s: s.get_num_motifs() if isinstance(s, SecStruct) else None
+                lambda s: (
+                    s.get_num_motifs() if isinstance(s, SecStruct) else None
+                )
             )
 
         def gc_content(self) -> "pd.Series":
@@ -181,7 +200,9 @@ if PANDAS_AVAILABLE:
                 pd.Series: Series of GC content values.
             """
             return self._obj.apply(
-                lambda s: s.get_gc_content() if isinstance(s, SecStruct) else None
+                lambda s: (
+                    s.get_gc_content() if isinstance(s, SecStruct) else None
+                )
             )
 
         def helix_lengths(self) -> "pd.Series":
@@ -191,7 +212,9 @@ if PANDAS_AVAILABLE:
                 pd.Series: Series of helix length lists.
             """
             return self._obj.apply(
-                lambda s: s.get_helix_lengths() if isinstance(s, SecStruct) else None
+                lambda s: (
+                    s.get_helix_lengths() if isinstance(s, SecStruct) else None
+                )
             )
 
         def has_pseudoknot(self) -> "pd.Series":
@@ -202,7 +225,10 @@ if PANDAS_AVAILABLE:
             """
             return self._obj.apply(
                 lambda s: (
-                    (hasattr(s, "connectivity") and len([c for c in s.connectivity if c != -1]) > 0)
+                    (
+                        hasattr(s, "connectivity")
+                        and len([c for c in s.connectivity if c != -1]) > 0
+                    )
                     if isinstance(s, SecStruct)
                     else None
                 )

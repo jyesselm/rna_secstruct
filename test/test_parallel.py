@@ -12,10 +12,20 @@ class TestParallelProcessing:
     def test_batch_parse_sequential(self):
         """Test batch parsing with sequential backend."""
         sequences = ["GGGAAACCC", "AAAGGGCCC", "CCCGAAAGGG"]
-        structures = ["(((...)))", "(((...)))", "(((...)))"]  # All 9 chars - need to match
+        structures = [
+            "(((...)))",
+            "(((...)))",
+            "(((...)))",
+        ]  # All 9 chars - need to match
         # Fix: make all sequences 9 chars
-        sequences = ["GGGAAACCC", "AAAGGGCCC", "CCCGAAAGG"]  # Last one is 9 chars
-        result = batch_parse(sequences, structures, n_jobs=1, backend="sequential")
+        sequences = [
+            "GGGAAACCC",
+            "AAAGGGCCC",
+            "CCCGAAAGG",
+        ]  # Last one is 9 chars
+        result = batch_parse(
+            sequences, structures, n_jobs=1, backend="sequential"
+        )
         assert len(result) == 3
         assert all(isinstance(s, SecStruct) for s in result)
         assert result[0].sequence == "GGGAAACCC"
@@ -33,9 +43,13 @@ class TestParallelProcessing:
         """Test batch connectivity with sequential backend."""
         sequences = ["GGGAAACCC", "AAAGGGCCC"]
         structures = ["(((...)))", "(((...)))"]
-        result = batch_connectivity(sequences, structures, n_jobs=1, backend="sequential")
+        result = batch_connectivity(
+            sequences, structures, n_jobs=1, backend="sequential"
+        )
         assert len(result) == 2
-        assert all(hasattr(r, "connections") or isinstance(r, list) for r in result)
+        assert all(
+            hasattr(r, "connections") or isinstance(r, list) for r in result
+        )
 
     def test_batch_connectivity_length_mismatch(self):
         """Test batch_connectivity with mismatched lengths."""
@@ -51,7 +65,10 @@ class TestParallelProcessing:
             SecStruct("AAAGGGCCC", "(((...)))"),
         ]
         result = batch_apply(
-            structs, lambda s: s.get_num_basepairs(), n_jobs=1, backend="sequential"
+            structs,
+            lambda s: s.get_num_basepairs(),
+            n_jobs=1,
+            backend="sequential",
         )
         assert len(result) == 2
         assert all(isinstance(n, int) for n in result)
@@ -67,5 +84,7 @@ class TestParallelProcessing:
         """Test batch_parse with n_jobs=None (auto-detect)."""
         sequences = ["GGGAAACCC", "AAAGGGCCC"]
         structures = ["(((...)))", "(((...)))"]
-        result = batch_parse(sequences, structures, n_jobs=None, backend="sequential")
+        result = batch_parse(
+            sequences, structures, n_jobs=None, backend="sequential"
+        )
         assert len(result) == 2

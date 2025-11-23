@@ -32,7 +32,9 @@ def _parse_single(sequence: str, structure: str) -> Any:
     return SecStruct(sequence, structure)
 
 
-def _get_connectivity_single(sequence: str, structure: str, format: Optional[str] = None) -> Any:
+def _get_connectivity_single(
+    sequence: str, structure: str, format: Optional[str] = None
+) -> Any:
     """Get connectivity list for a single structure (helper for parallel processing).
 
     Args:
@@ -79,7 +81,10 @@ def batch_parse(
 
     if backend == "sequential" or n_jobs == 1:
         # Sequential processing
-        return [SecStruct(seq, struct, **kwargs) for seq, struct in zip(sequences, structures)]
+        return [
+            SecStruct(seq, struct, **kwargs)
+            for seq, struct in zip(sequences, structures)
+        ]
     elif backend == "threading":
         # Threading backend (good for I/O-bound tasks, but GIL limits CPU-bound)
         from concurrent.futures import ThreadPoolExecutor
@@ -150,7 +155,9 @@ def batch_connectivity(
         with ThreadPoolExecutor(max_workers=n_jobs) as executor:
             return list(
                 executor.map(
-                    lambda args: get_connectivity_list(args[0], args[1], format=format, **kwargs),
+                    lambda args: get_connectivity_list(
+                        args[0], args[1], format=format, **kwargs
+                    ),
                     zip(sequences, structures),
                 )
             )
@@ -158,7 +165,9 @@ def batch_connectivity(
         # Multiprocessing backend
         with mp.Pool(processes=n_jobs) as pool:
             return pool.starmap(
-                lambda seq, struct: get_connectivity_list(seq, struct, format=format, **kwargs),
+                lambda seq, struct: get_connectivity_list(
+                    seq, struct, format=format, **kwargs
+                ),
                 zip(sequences, structures),
             )
     else:

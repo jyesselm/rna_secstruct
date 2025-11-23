@@ -62,7 +62,9 @@ class TestPandasExtensions:
                 "structure": ["(((...)))", "(((...)))"],
             }
         )
-        df["secstruct"] = df.rna.from_sequence_structure("sequence", "structure")
+        df["secstruct"] = df.rna.from_sequence_structure(
+            "sequence", "structure"
+        )
         df_new = df.rna.add_statistics("secstruct")
         assert "secstruct_num_bp" in df_new.columns
         assert "secstruct_num_unpaired" in df_new.columns

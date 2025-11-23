@@ -34,11 +34,15 @@ def read_dbn_file(filepath: Path) -> Tuple[str, str]:
 
     # Filter out comment lines (starting with #)
     non_comment_lines = [
-        line.strip() for line in lines if line.strip() and not line.strip().startswith("#")
+        line.strip()
+        for line in lines
+        if line.strip() and not line.strip().startswith("#")
     ]
 
     if len(non_comment_lines) < 2:
-        raise ValueError(f"File {filepath} does not contain both sequence and structure lines")
+        raise ValueError(
+            f"File {filepath} does not contain both sequence and structure lines"
+        )
 
     sequence = non_comment_lines[0]
     structure = non_comment_lines[1]
@@ -46,7 +50,9 @@ def read_dbn_file(filepath: Path) -> Tuple[str, str]:
     return sequence, structure
 
 
-def parse_single_file(filepath_str: str) -> Tuple[str, Optional[str], Optional[str]]:
+def parse_single_file(
+    filepath_str: str,
+) -> Tuple[str, Optional[str], Optional[str]]:
     """
     Parse a single .dbn file and return the result.
 
@@ -146,7 +152,9 @@ def test_parse_all_dbn_files():
             error_types[error_type] = error_types.get(error_type, 0) + 1
 
         print("\nFailure breakdown by error type:")
-        for error_type, count in sorted(error_types.items(), key=lambda x: -x[1]):
+        for error_type, count in sorted(
+            error_types.items(), key=lambda x: -x[1]
+        ):
             print(f"  {error_type}: {count}")
 
         # Save detailed failure report

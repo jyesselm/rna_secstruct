@@ -2,7 +2,10 @@
 Tests for mixed format connectivity (brackets + letters/numbers).
 """
 
-from rna_secstruct.connectivity import _detect_structure_format, get_connectivity_list
+from rna_secstruct.connectivity import (
+    _detect_structure_format,
+    get_connectivity_list,
+)
 
 
 class TestMixedFormats:

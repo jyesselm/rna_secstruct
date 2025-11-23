@@ -65,7 +65,9 @@ class SecStruct:
         if len(sequence) != len(structure):
             raise ValueError("sequence and structure must be the same length")
         if sequence.count("&") != structure.count("&"):
-            raise ValueError("sequence and structure must have the same number of strands")
+            raise ValueError(
+                "sequence and structure must have the same number of strands"
+            )
 
         self.__sequence = sequence
         self.__structure = structure
@@ -91,7 +93,10 @@ class SecStruct:
         Returns:
             SecStruct: A new SecStruct instance with concatenated sequence and structure.
         """
-        return SecStruct(self.__sequence + other.__sequence, self.__structure + other.__structure)
+        return SecStruct(
+            self.__sequence + other.__sequence,
+            self.__structure + other.__structure,
+        )
 
     def itermotifs(self):
         """Iterate over motifs.
@@ -211,7 +216,9 @@ class SecStruct:
         if len(sequence) != len(structure):
             raise ValueError("sequence and structure must be the same length")
         if sequence.count("&") != structure.count("&"):
-            raise ValueError("sequence and structure must have the same number of strands")
+            raise ValueError(
+                "sequence and structure must have the same number of strands"
+            )
         m_item = self[m_id]
         # Type guard: ensure we have a Motif, not SecStruct
         if not isinstance(m_item, Motif):
@@ -221,7 +228,10 @@ class SecStruct:
         if m.num_strands() < sequence.count("&") + 1:
             raise ValueError("cannot add strands to a motif")
         m_type = m.m_type
-        if m.num_strands() > sequence.count("&") + 1 and sequence.count("&") == 0:
+        if (
+            m.num_strands() > sequence.count("&") + 1
+            and sequence.count("&") == 0
+        ):
             m_type = "SINGLESTRAND" if structure.count("(") == 0 else "HAIRPIN"
         if m.has_parent() and m.parent.is_helix():
             self.__change_inner_flanking(m.parent, sequence[0] + sequence[-1])
@@ -370,7 +380,9 @@ class SecStruct:
         """
         return self.__get_motifs_by_params(msp)
 
-    def get_motifs_by_token(self, token, msp: Optional[MotifSearchParams] = None) -> List[Motif]:
+    def get_motifs_by_token(
+        self, token, msp: Optional[MotifSearchParams] = None
+    ) -> List[Motif]:
         """Get a list of motifs by a token.
 
         Args:
@@ -561,7 +573,9 @@ class SecStruct:
                 f"Invalid position: {pos}. Must be between 0 and {len(self.__sequence)}"
             )
         seq = self.__sequence[:pos] + other.__sequence + self.__sequence[pos:]
-        struct = self.__structure[:pos] + other.__structure + self.__structure[pos:]
+        struct = (
+            self.__structure[:pos] + other.__structure + self.__structure[pos:]
+        )
         return SecStruct(seq, struct)
 
     def join(self, other: "SecStruct") -> "SecStruct":
@@ -689,7 +703,10 @@ class SecStruct:
     # Search methods #############################################################
 
     def find(
-        self, sub: "SecStruct", start: Optional[int] = None, end: Optional[int] = None
+        self,
+        sub: "SecStruct",
+        start: Optional[int] = None,
+        end: Optional[int] = None,
     ) -> List[Tuple[int, int]]:
         """Find the position(s) of a substructure in this structure.
 
@@ -718,7 +735,10 @@ class SecStruct:
             search_seq = self.__sequence[start:end]
             search_struct = self.__structure[start:end]
             pos = search_seq.find(sub_seq)
-            if pos != -1 and search_struct[pos : pos + len(sub_seq)] == sub_struct:
+            if (
+                pos != -1
+                and search_struct[pos : pos + len(sub_seq)] == sub_struct
+            ):
                 # Verify structure matches at this position
                 matches.append((start + pos, start + pos + len(sub_seq)))
         else:
@@ -737,7 +757,9 @@ class SecStruct:
 
         return matches
 
-    def find_sequence(self, pattern: str, allow_wildcards: bool = True) -> List[Tuple[int, int]]:
+    def find_sequence(
+        self, pattern: str, allow_wildcards: bool = True
+    ) -> List[Tuple[int, int]]:
         """Find positions matching a sequence pattern.
 
         Supports wildcards: 'N' matches any nucleotide, 'R' matches A/G, etc.
@@ -950,7 +972,10 @@ class SecStruct:
         """
         if not isinstance(other, SecStruct):
             return False
-        return self.__sequence == other.__sequence and self.__structure == other.__structure
+        return (
+            self.__sequence == other.__sequence
+            and self.__structure == other.__structure
+        )
 
     def structural_similarity(self, other: "SecStruct") -> float:
         """Calculate structural similarity score.
@@ -969,7 +994,9 @@ class SecStruct:
         if len(self.__structure) == 0:
             return 1.0
 
-        matches = sum(1 for s1, s2 in zip(self.__structure, other.__structure) if s1 == s2)
+        matches = sum(
+            1 for s1, s2 in zip(self.__structure, other.__structure) if s1 == s2
+        )
         return matches / len(self.__structure)
 
     def sequence_identity(self, other: "SecStruct") -> float:
@@ -989,7 +1016,9 @@ class SecStruct:
         if len(self.__sequence) == 0:
             return 1.0
 
-        matches = sum(1 for s1, s2 in zip(self.__sequence, other.__sequence) if s1 == s2)
+        matches = sum(
+            1 for s1, s2 in zip(self.__sequence, other.__sequence) if s1 == s2
+        )
         return matches / len(self.__sequence)
 
     # JSON serialization methods #################################################
@@ -1041,7 +1070,9 @@ class SecStruct:
         data = json.loads(json_str)
         return cls.from_dict(data)
 
-    def to_json_file(self, filepath: str, indent: Optional[int] = None, **kwargs) -> None:
+    def to_json_file(
+        self, filepath: str, indent: Optional[int] = None, **kwargs
+    ) -> None:
         """Save SecStruct to JSON file.
 
         Args:
