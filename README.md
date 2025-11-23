@@ -24,23 +24,23 @@ A modern, comprehensive Python package for parsing, analyzing, and manipulating 
 
 ## Installation
 
-Install from GitHub:
+Install from PyPI:
 
 ```bash
-python -m pip install git+https://github.com/jyesselm/rna_secstruct
+pip install rna_secstruct
 ```
 
 Install with optional dependencies:
 
 ```bash
 # With pandas support
-pip install git+https://github.com/jyesselm/rna_secstruct#egg=rna_secstruct[pandas]
+pip install rna_secstruct[pandas]
 
 # With parallel processing
-pip install git+https://github.com/jyesselm/rna_secstruct#egg=rna_secstruct[parallel]
+pip install rna_secstruct[parallel]
 
 # With all optional dependencies
-pip install git+https://github.com/jyesselm/rna_secstruct#egg=rna_secstruct[all]
+pip install rna_secstruct[all]
 ```
 
 ## Quick Start
